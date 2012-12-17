@@ -29,16 +29,16 @@ class Pronamic_WordPress_IDeal_ConfigurationsRepository {
 	 * Load the providers and variants from an XML file
 	 */
 	public static function load() {
-		if(self::$providers == null) {
+		if ( self::$providers == null ) {
 			self::$providers = array();
-			self::$variants = array();
+			self::$variants  = array();
 
-			$file = plugin_dir_path(Pronamic_WordPress_IDeal_Plugin::$file) . 'ideal.xml';
+			$file = plugin_dir_path( Pronamic_WordPress_IDeal_Plugin::$file ) . 'data.xml';
 	
-			self::$providers = Pronamic_IDeal_IDeal::getProvidersFromXml($file);
+			self::$providers = Pronamic_IDeal_IDeal::get_providers_from_xml( $file );
 
-			foreach(self::$providers as $provider) {
-				foreach($provider->getVariants() as $variant) {
+			foreach ( self::$providers as $provider ) {
+				foreach ( $provider->getVariants() as $variant ) {
 					self::$variants[$variant->getId()] = $variant;
 				}
 			}
@@ -50,48 +50,37 @@ class Pronamic_WordPress_IDeal_ConfigurationsRepository {
 	/**
 	 * Update table
 	 */
-	public static function updateTable() {
-        require_once ABSPATH . '/wp-admin/includes/upgrade.php';
+	public static function update_table() {
+		require_once ABSPATH . '/wp-admin/includes/upgrade.php';
 
 		global $wpdb;
 
-		$charsetCollate = '';
-        if(!empty($wpdb->charset)) {
-            $charsetCollate = 'DEFAULT CHARACTER SET ' . $wpdb->charset;
-        }
-        if(!empty($wpdb->collate)) {
-            $charsetCollate .= ' COLLATE ' . $wpdb->collate;
-        }
+		$charset_collate = '';
+		if ( ! empty( $wpdb->charset ) ) {
+			$charset_collate = 'DEFAULT CHARACTER SET ' . $wpdb->charset;
+		}
+		if ( ! empty( $wpdb->collate ) ) {
+			$charset_collate .= ' COLLATE ' . $wpdb->collate;
+		}
 
         // iDEAL configurations table
-        $tableName = self::getConfigurationsTableName();
+		$configurations_table = self::getConfigurationsTableName();
 
-        $sql = "CREATE TABLE $tableName (
-			id MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT ,  
-			variant_id VARCHAR(64) NULL ,
-			merchant_id VARCHAR(64) NULL ,  
-			sub_id VARCHAR(64) NULL ,
-			mode VARCHAR(64) NULL ,
-			hash_key VARCHAR(64) NULL ,
-			private_key TEXT NULL ,
-			private_key_password VARCHAR(64) NULL ,
-			private_certificate TEXT NULL , 
-			meta LONGTEXT , 
-			PRIMARY KEY  (id) 
-			) $charsetCollate;";
+		$sql = "CREATE TABLE $configurations_table (
+			id MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,
+			variant_id VARCHAR(64) NULL,
+			merchant_id VARCHAR(64) NULL,
+			sub_id VARCHAR(64) NULL,
+			mode VARCHAR(64) NULL,
+			hash_key VARCHAR(64) NULL,
+			private_key TEXT NULL,
+			private_key_password VARCHAR(64) NULL,
+			private_certificate TEXT NULL,
+			meta LONGTEXT,
+			PRIMARY KEY  (id)
+		) $charset_collate;";
 
-        dbDelta($sql);
-    }
-
-	//////////////////////////////////////////////////
-    
-    /**
-     * Drop the tables
-     */
-    public static function dropTables() {
-		global $wpdb;
-
-		$wpdb->query('DROP TABLE IF EXISTS ' . self::getConfigurationsTableName());
+		dbDelta( $sql );
     }
 
 	//////////////////////////////////////////////////
@@ -106,7 +95,6 @@ class Pronamic_WordPress_IDeal_ConfigurationsRepository {
 
 		return $wpdb->prefix . 'pronamic_ideal_configurations';
     }
-
 
 	//////////////////////////////////////////////////
 	
@@ -131,6 +119,19 @@ class Pronamic_WordPress_IDeal_ConfigurationsRepository {
        	$configuration->numberPayments = $result->numberPayments;
       	
 		$meta = json_decode($result->meta);
+
+		// OmniKassa
+		if(isset($meta->keyVersion)) $configuration->keyVersion = $meta->keyVersion;
+		if ( $result->variantId == 'rabobank-omnikassa' && empty( $configuration->keyVersion ) ) {
+			$configuration->keyVersion = $result->subId;
+		}
+
+		// Mollie
+		if(isset($meta->molliePartnerId)) $configuration->molliePartnerId = $meta->molliePartnerId;
+		if(isset($meta->mollieProfileKey)) $configuration->mollieProfileKey = $meta->mollieProfileKey;
+
+		// TargetPay
+		if(isset($meta->targetPayLayoutCode)) $configuration->targetPayLayoutCode = $meta->targetPayLayoutCode;
 
 		// Kassa
 		if(isset($meta->pspId)) $configuration->pspId = $meta->pspId;
@@ -297,13 +298,13 @@ class Pronamic_WordPress_IDeal_ConfigurationsRepository {
 		
 		$list = implode(',', array_map('absint', $ids));
 
-		$query = $wpdb->prepare("
+		$query = "
 			DELETE 
 			FROM 
 				$table 
 			WHERE 
 				id IN ($list)
-			");
+		";
 
         return $wpdb->query($query);
     }

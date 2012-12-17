@@ -22,8 +22,8 @@ class Pronamic_Gateways_MultiSafepay_MultiSafepay {
 	//////////////////////////////////////////////////
 	
 	public function __construct() {
-		$this->setCurrency(self::CURRENCY_EURO);
-		$this->setAction(self::ACTION_PAY);
+		$this->setCurrency( self::CURRENCY_EURO );
+		$this->setAction( self::ACTION_PAY );
 	}
 
 	//////////////////////////////////////////////////
@@ -54,17 +54,15 @@ class Pronamic_Gateways_MultiSafepay_MultiSafepay {
 	 * @return string
 	 */
 	public function getHtmlFields() {
-		$html  = '';
-	
-		$html .= sprintf('<input type="hidden" name="currency" value="%s" />', $this->getCurrency());
-		$html .= sprintf('<input type="hidden" name="action" value="%s" />', $this->getAction());
-		$html .= sprintf('<input type="hidden" name="account" value="%s" />', $this->getAccount());
-		$html .= sprintf('<input type="hidden" name="site_id" value="%s" />', $this->getSiteId());
-		$html .= sprintf('<input type="hidden" name="site_secure_code" value="%s" />', $this->getSiteSecureCode());
-		$html .= sprintf('<input type="hidden" name="amount" value="%s" />', $this->getAmount());
-		$html .= sprintf('<input type="hidden" name="description" value="%s" />', $this->getDescription());
-		$html .= sprintf('<input type="hidden" name="items" value="%s" />', $this->getItems());
-	
-		return $html;
+		return Pronamic_IDeal_IDeal::htmlHiddenFields( array(
+			'currency'         => $this->getCurrency(),
+			'action'           => $this->getAction(),
+			'account'          => $this->getAccount(),
+			'site_id'          => $this->getSiteId(),
+			'site_secure_code' => $this->getSiteSecureCode(),
+			'amount'           => $this->getAmount(),
+			'description'      => $this->getDescription(),
+			'items'            => $this->getItems()
+		) );
 	}
 }

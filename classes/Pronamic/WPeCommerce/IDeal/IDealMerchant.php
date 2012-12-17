@@ -41,54 +41,37 @@ class Pronamic_WPeCommerce_IDeal_IDealMerchant extends wpsc_merchant {
 		// @see http://plugins.trac.wordpress.org/browser/wp-e-commerce/tags/3.8.7.6.2/wpsc-core/wpsc-functions.php#L115
 		$this->set_purchase_processed_by_purchid( Pronamic_WPeCommerce_WPeCommerce::PURCHASE_STATUS_ORDER_RECEIVED );
 
-		if( $configuration !== null ) {
-			$variant = $configuration->getVariant();
-	
-			if( $variant !== null ) {
-				switch( $variant->getMethod() ) {
-					case Pronamic_IDeal_IDeal::METHOD_EASY:
-					case Pronamic_IDeal_IDeal::METHOD_BASIC:
-					case Pronamic_IDeal_IDeal::METHOD_OMNIKASSA:
-						add_action( 'wpsc_bottom_of_shopping_cart', array( $this, 'shoppingCartBottom' ) );
-						
-						break;
-					case Pronamic_IDeal_IDeal::METHOD_ADVANCED:
-						return $this->submit_advanced( $configuration, $variant );
-				}
+		$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
+		
+		if ( $gateway ) {
+			if ( $gateway->is_http_redirect() ) {
+				return $this->process_gateway_http_redirect( $configuration, $gateway );
+			}
+
+			if ( $gateway->is_html_form() ) {
+				add_action( 'wpsc_bottom_of_shopping_cart', array( $this, 'bottom_of_shopping_cart' ) );
 			}
 		}
 	}
 
-	private function submit_advanced( $configuration, $variant ) {
-		$data_proxy = new Pronamic_WPeCommerce_IDeal_IDealDataProxy( $this );
+	/**
+	 * Process gateway HTTP redirect
+	 * 
+	 * @param unknown_type $configuration
+	 * @param unknown_type $gateway
+	 */
+	private function process_gateway_http_redirect( $configuration, $gateway ) {
+		$data = new Pronamic_WPeCommerce_IDeal_IDealDataProxy( $this );
 
-    	$issuer_id = filter_input( INPUT_POST, 'pronamic_ideal_issuer_id', FILTER_SANITIZE_STRING );
+		Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
 
-		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentBySource( $data_proxy->getSource(), $data_proxy->getOrderId() );
-    	
-		if($payment == null) {
-			$transaction = new Pronamic_IDeal_Transaction();
-			$transaction->setAmount( $data_proxy->getAmount() ); 
-			$transaction->setCurrency( $data_proxy->getCurrencyAlphabeticCode() );
-			$transaction->setExpirationPeriod( 'PT1H' );
-			$transaction->setLanguage( $data_proxy->getLanguageIso639Code() );
-			$transaction->setEntranceCode( uniqid() );
-			$transaction->setDescription( $data_proxy->getDescription() );
-			$transaction->setPurchaseId( $data_proxy->getOrderId() );
-	
-			$payment = new Pronamic_WordPress_IDeal_Payment();
-			$payment->configuration = $configuration;
-			$payment->transaction = $transaction;
-			$payment->setSource( $data_proxy->getSource(), $data_proxy->getOrderId() );
-	
-			$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updatePayment( $payment );
-    	}
+		$error = $gateway->get_error();
 
-		$url = Pronamic_WordPress_IDeal_IDeal::handleTransaction( $issuer_id, $payment, $variant );
-
-		wp_redirect( $url );
-		
-		exit;
+		if ( is_wp_error( $error ) ) {
+			// @todo what todo?
+		} else {
+	    	$gateway->redirect();
+		}
 	}
 
 	//////////////////////////////////////////////////
@@ -96,20 +79,24 @@ class Pronamic_WPeCommerce_IDeal_IDealMerchant extends wpsc_merchant {
 	/**
 	 * Shopping cart bottom
 	 */
-	public function shoppingCartBottom() {
+	public function bottom_of_shopping_cart() {
 		$configuration_id = get_option( 'pronamic_ideal_wpsc_configuration_id' );
 
 		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $configuration_id );
 
-		$data_proxy = new Pronamic_WPeCommerce_IDeal_IDealDataProxy( $this );
+		$data = new Pronamic_WPeCommerce_IDeal_IDealDataProxy( $this );
 
-		$html = Pronamic_WordPress_IDeal_IDeal::getHtmlForm( $data_proxy, $configuration, true );
+		$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
 
-		// Hide the checkout page container HTML element
-		echo '<style type="text/css">#checkout_page_container { display: none; }</style>';
-		
-		// Display the iDEAL form
-		echo $html;
+		if ( $gateway ) {
+			Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
+	
+			// Hide the checkout page container HTML element
+			echo '<style type="text/css">#checkout_page_container { display: none; }</style>';
+
+			// Display the iDEAL form
+			echo $gateway->get_form_html();
+		}
 	}
 
 	//////////////////////////////////////////////////
@@ -117,7 +104,7 @@ class Pronamic_WPeCommerce_IDeal_IDealMerchant extends wpsc_merchant {
 	/**
 	 * Admin configuration form
 	 */
-	public static function adminConfigurationForm() {
+	public static function admin_configuration_form() {
 		$html = '';
 		
 		// Select configuration
@@ -125,17 +112,17 @@ class Pronamic_WPeCommerce_IDeal_IDealMerchant extends wpsc_merchant {
 
 		$html .= '<tr>';
 		$html .= '	<td class="wpsc_CC_details">';
-		$html .= '		' . __( 'iDEAL Configuration', 'pronamic_ideal');
+		$html .= '		' . __( 'iDEAL Configuration', 'pronamic_ideal' );
 		$html .= '	</td>';
 		$html .= '	<td>';
 		$html .= '		<select name="pronamic_ideal_wpsc_configuration_id">';
-		$html .= '			<option>' . __('&mdash; Select configuration &mdash;', 'pronamic_ideal') . '</option>';
+		$html .= '			<option>' . __( '&mdash; Select configuration &mdash;', 'pronamic_ideal' ) . '</option>';
 
-		foreach($configurations as $configuration) {
+		foreach ( $configurations as $configuration ) {
 			$html .= sprintf(
-				'<option value="%s" %s>%s</option>',  
-				esc_attr($configuration->getId()) , 
-				selected(get_option('pronamic_ideal_wpsc_configuration_id'), $configuration->getId(), false) ,
+				'<option value="%s" %s>%s</option>',
+				esc_attr( $configuration->getId() ),
+				selected( get_option( 'pronamic_ideal_wpsc_configuration_id' ), $configuration->getId(), false ),
 				$configuration->getName()
 			);
 	   	}
@@ -150,13 +137,13 @@ class Pronamic_WPeCommerce_IDeal_IDealMerchant extends wpsc_merchant {
 	/**
 	 * Admin configuration submit
 	 */
-	public static function adminConfigurationSubmit() {
+	public static function admin_configuration_submit() {
 		$name = 'pronamic_ideal_wpsc_configuration_id';
 
-		if(isset($_POST[$name])) {
-			$configurationId = filter_input(INPUT_POST, $name, FILTER_SANITIZE_STRING);
+		if ( isset( $_POST[$name] ) ) {
+			$configuration_id = filter_input( INPUT_POST, $name, FILTER_SANITIZE_STRING );
 
-			update_option($name, $configurationId);
+			update_option( $name, $configuration_id );
 		}
 
 		return true;

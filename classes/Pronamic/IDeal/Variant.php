@@ -9,6 +9,12 @@
  * @version 1.0
  */
 class Pronamic_IDeal_Variant {
+	const METHOD_HTML_FORM = 1;
+
+	const METHOD_HTTP_REDIRECT = 2;
+
+	//////////////////////////////////////////////////
+
 	/**
 	 * The company who is providing this variant
 	 * 
@@ -63,8 +69,27 @@ class Pronamic_IDeal_Variant {
 
 	//////////////////////////////////////////////////
 
+	/**
+	 * Indicator for real time feedback of payment status
+	 * 
+	 * @var boolean
+	 */
+	public $feedback_payment_status;
+
+	/**
+	 * Method ID
+	 * 
+	 * @var int
+	 */
+	public $method_id;
+
+	//////////////////////////////////////////////////
+
 	public function __construct() {
 		$this->certificates = array();
+		
+		$this->feedback_payment_status = true;
+		$this->method_id = self::METHOD_HTML_FORM;
 	}
 
 	//////////////////////////////////////////////////
@@ -108,6 +133,15 @@ class Pronamic_IDeal_Variant {
 	}
 
 	//////////////////////////////////////////////////
+	
+	private function get_settings( $mode = IDeal::MODE_LIVE ) {
+		switch($mode) {
+			case Pronamic_IDeal_IDeal::MODE_LIVE:
+				return $this->liveSettings;
+			case Pronamic_IDeal_IDeal::MODE_TEST:
+				return $this->testSettings;
+		}
+	}
 
 	public function getPaymentServerUrl($mode = IDeal::MODE_LIVE) {
 		switch($mode) {

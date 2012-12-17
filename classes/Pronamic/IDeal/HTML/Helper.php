@@ -10,48 +10,39 @@
  */
 class Pronamic_IDeal_HTML_Helper {
 	/**
-	 * Create an issuer HTML select element
+	 * Array to HTML attributes
 	 * 
-	 * @param string $name
-	 * @param array $lists
-	 * @param string $emptyOption
-	 * @param array $groups
+	 * @param array $pieces
 	 */
-	public static function issuersSelect($name, array $lists, $emptyOption = null, array $groups = array()) {
-		$html  = '';
+	public static function array_to_html_attributes( array $attributes ) {
+		$html = '';
+		$space = '';
 
-		$html .= '<select name="' . $name . '">';
-		$html .= self::issuersSelectOptions($lists, $emptyOption, $groups);
-		$html .= '</select>';
-		
+		foreach ( $attributes as $key => $value ) {
+			if ( !empty( $value ) ) {
+				$html .= $space . $key . '=' . '"' . esc_attr( $value ) . '"';
+
+				$space = ' ';
+			} 
+		}
+
 		return $html;
 	}
+	
+	public static function select_options_grouped( $groups, $selected_value = null ) {
+		$html = '';
 
-	/**
-	 * Create isseur HTML select options
-	 * 
-	 * @param array $lists
-	 * @param string $emptyOption
-	 * @param array $groups
-	 */
-	public static function issuersSelectOptions(array $lists, $emptyOption = null, $value, array $groups = array()) {
-		$html  = '';
-
-		if($emptyOption !== null) {
-			$html .= '	<option value="">' . $emptyOption . '</option>';
-		}
-		
-		foreach($lists as $name => $list) {
-			if(isset($groups[$name])) {
-				$html .= '	<optgroup label="' . $groups[$name] . '">';
+		foreach( $groups as $group ) {
+			if ( isset( $group['name'] ) ) {
+				$html .= '<optgroup label="' . $group['name'] . '">';
 			}
 
-			foreach($list as $issuer) {
-				$html .= '	<option value="' . $issuer->getId() . '" ' . selected($value, $issuer->getId(), false) . '>' . $issuer->getName() . '</option>';
+			foreach( $group['options'] as $value => $label ) {
+				$html .= '<option value="' . $value . '" ' . selected( $selected_value, $value, false ) . '>' . $label . '</option>';
 			}
 
-			if(isset($groups[$name])) {
-				$html .= '	</optgroup>';
+			if ( isset( $group['name'] ) ) {
+				$html .= '</optgroup>';
 			}
 		}
 		

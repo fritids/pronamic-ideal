@@ -103,8 +103,8 @@ class Pronamic_IDeal_IDeal {
 	public static function htmlHiddenFields($data) {
 		$html = '';
 
-		foreach($data as $name => $value) {
-			$html .= sprintf('<input type="hidden" name="%s" value="%s" />', esc_attr($name), esc_attr($value));
+		foreach ( $data as $name => $value ) {
+			$html .= sprintf( '<input type="hidden" name="%s" value="%s" />', esc_attr( $name ), esc_attr( $value ) );
 		}
 
 		return $html;
@@ -118,66 +118,57 @@ class Pronamic_IDeal_IDeal {
 	 * @param string $file
 	 * @return array
 	 */
-	public static function getProvidersFromXml($file) {
+	public static function get_providers_from_xml( $file ) {
 		$providers = array();
 
-		$xml = simplexml_load_file($file);
-		if($xml !== false) {
-			foreach($xml->provider as $providerXml) {
-				$enabled = (string) $providerXml['disabled'] != 'disabled';
+		$xml = simplexml_load_file( $file );
 
-				if($enabled) {
+		if ( $xml !== false ) {
+			foreach ( $xml->provider as $provider_xml ) {
+				$enabled = (string) $provider_xml['disabled'] != 'disabled';
+
+				if ( $enabled ) {
 					$provider = new Pronamic_IDeal_Provider();
-					$provider->setId((string) $providerXml->id);
-					$provider->setName((string) $providerXml->name);
-					$provider->setUrl((string) $providerXml->url);
+					$provider->setId( (string) $provider_xml->id );
+					$provider->setName( (string) $provider_xml->name );
+					$provider->setUrl( (string) $provider_xml->url );
 					
-					foreach($providerXml->variant as $variantXml) {
-						$enabled = (string) $variantXml['disabled'] != 'disabled';
+					foreach ( $provider_xml->variant as $variant_xml ) {
+						$enabled = (string) $variant_xml['disabled'] != 'disabled';
 	
-						if($enabled) {
-							switch((string) $variantXml['method']) {
-								case self::METHOD_EASY:
-									$variant = new Pronamic_IDeal_VariantEasy();
-									break;
-								case self::METHOD_BASIC:
-									$variant = new Pronamic_IDeal_VariantBasic();
-									break;
-								case self::METHOD_INTERNETKASSA:
-									$variant = new Pronamic_IDeal_VariantInternetKassa();
-									break;
-								case self::METHOD_OMNIKASSA:
-									$variant = new Pronamic_IDeal_VariantOmniKassa();
-									break;
-								case self::METHOD_ADVANCED:
-									$variant = new Pronamic_IDeal_VariantAdvanced();
-									break;
-								default:
-									$variant = new Pronamic_IDeal_Variant();
-									break;
-							}
-		
-							$variant->setProvider($provider);
-							$variant->setId((string) $variantXml->id);
-							$variant->setName((string) $variantXml->name);
-							
+						if ( $enabled ) {
+							$gateway = (string) $variant_xml['gateway'];
+
+							$variant = new Pronamic_IDeal_Variant();
+							$variant->setMethod( $gateway );
+
+							$variant->setProvider( $provider );
+							$variant->setId( (string) $variant_xml->id );
+							$variant->setName( (string) $variant_xml->name );
+
 							$variant->liveSettings = new stdClass();
-							$variant->liveSettings->dashboardUrl = (string) $variantXml->live->dashboardUrl;
-							$variant->liveSettings->paymentServerUrl = (string) $variantXml->live->paymentServerUrl;
-							
+							$variant->liveSettings->dashboardUrl          = (string) $variant_xml->live->dashboardUrl;
+							$variant->liveSettings->paymentServerUrl      = (string) $variant_xml->live->paymentServerUrl;
+							$variant->liveSettings->directoryRequestUrl   = (string) $variant_xml->live->directoryRequestUrl;
+							$variant->liveSettings->transactionRequestUrl = (string) $variant_xml->live->transactionRequestUrl;
+							$variant->liveSettings->statusRequestUrl      = (string) $variant_xml->live->statusRequestUrl;
+
 							$variant->testSettings = new stdClass();
-							$variant->testSettings->dashboardUrl = (string) $variantXml->test->dashboardUrl;
-							$variant->testSettings->paymentServerUrl = (string) $variantXml->test->paymentServerUrl;
+							$variant->testSettings->dashboardUrl          = (string) $variant_xml->test->dashboardUrl;
+							$variant->testSettings->paymentServerUrl      = (string) $variant_xml->test->paymentServerUrl;
+							$variant->testSettings->directoryRequestUrl   = (string) $variant_xml->test->directoryRequestUrl;
+							$variant->testSettings->transactionRequestUrl = (string) $variant_xml->test->transactionRequestUrl;
+							$variant->testSettings->statusRequestUrl      = (string) $variant_xml->test->statusRequestUrl;
 
-							$element = $variantXml->xpath('certificates/file');
+							$element = $variant_xml->xpath( 'certificates/file' );
 
-							if($element !== false) {
-								foreach($element as $fileXml) {
-									$variant->certificates[] = (string) $fileXml;
+							if ( $element !== false ) {
+								foreach ( $element as $file_xml ) {
+									$variant->certificates[] = (string) $file_xml;
 								}
 							}
 							
-							$provider->addVariant($variant);
+							$provider->addVariant( $variant );
 						}
 					}
 	
