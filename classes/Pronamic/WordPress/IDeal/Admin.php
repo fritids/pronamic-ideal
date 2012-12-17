@@ -13,36 +13,93 @@ class Pronamic_WordPress_IDeal_Admin {
 	 * Bootstrap
 	 */
 	public static function bootstrap() {
-		add_action( 'admin_menu', array( __CLASS__, 'admin_menu') );
+		add_action( 'admin_init',                              array( __CLASS__, 'admin_init' ) );
+		add_action( 'admin_menu',                              array( __CLASS__, 'admin_menu' ) );
 
-		add_action('load-ideal_page_pronamic_ideal_payments', array(__CLASS__, 'loadPaymentsPage'));
+		add_action( 'load-ideal_page_pronamic_ideal_payments', array( __CLASS__, 'load_payments_page' ) );
 		
-		add_action('load-toplevel_page_pronamic_ideal', array(__CLASS__, 'maybeTestPayment'));
+		add_action( 'load-toplevel_page_pronamic_ideal',       array( __CLASS__, 'maybe_test_payment' ) );
 
-		add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueueAdminScripts'));
+		add_action( 'admin_enqueue_scripts',                   array( __CLASS__, 'enqueue_scripts' ) );
 	}
 
 	//////////////////////////////////////////////////
 
 	/**
+	 * Admin initialize
+	 */
+	public static function admin_init() {
+		self::maybe_download_private_certificate();
+		self::maybe_download_private_key();
+	}
+
+	/**
+	 * Download private certificate
+	 */
+	public static function maybe_download_private_certificate() {
+		if ( isset( $_POST['download_private_certificate'] ) ) {
+			$id = filter_input( INPUT_POST, 'pronamic_ideal_configuration_id', FILTER_SANITIZE_STRING );
+
+			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $id );
+
+			if ( ! empty( $configuration ) ) {
+				$filename = 'ideal-private-certificate-' . $id . '.cer';
+
+				header( 'Content-Description: File Transfer' );
+				header( 'Content-Disposition: attachment; filename=' . $filename );
+				header( 'Content-Type: application/x-x509-ca-cert; charset=' . get_option( 'blog_charset' ), true );
+
+				echo $configuration->privateCertificate;
+
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * Download private key
+	 */
+	public static function maybe_download_private_key() {
+		if ( isset( $_POST['download_private_key'] ) ) {
+			$id = filter_input( INPUT_POST, 'pronamic_ideal_configuration_id', FILTER_SANITIZE_STRING );
+
+			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $id );
+
+			if ( ! empty( $configuration ) ) {
+				$filename = 'ideal-private-key-' . $id . '.key';
+
+				header( 'Content-Description: File Transfer' );
+				header( 'Content-Disposition: attachment; filename=' . $filename );
+				header( 'Content-Type: application/pgp-keys; charset=' . get_option( 'blog_charset' ), true );
+
+				echo $configuration->privateKey;
+
+				exit;
+			}
+		}
+	}
+	
+	//////////////////////////////////////////////////
+
+	/**
 	 * Enqueue admin scripts
 	 */
-	public static function enqueueAdminScripts($hook) {
-		$isPronamicIDeal = strpos($hook, 'pronamic_ideal') !== false;
-		$editGravityForms = (strpos($hook, 'page_gf_new_form')) !== false || (strpos($hook, 'page_gf_edit_forms') !== false);
+	public static function enqueue_scripts( $hook ) {
+		$is_pronamic_ideal = strpos( $hook, 'pronamic_ideal' ) !== false;
+		$edit_gravity_forms = ( strpos( $hook, 'page_gf_new_form' ) ) !== false || ( strpos( $hook, 'page_gf_edit_forms' ) !== false );
 
-		if($isPronamicIDeal || $editGravityForms) {
+		if ( $is_pronamic_ideal || $edit_gravity_forms ) {
 			// Styles
 			wp_enqueue_style(
-				'proanmic_ideal_admin' , 
-				plugins_url('css/admin.css', Pronamic_WordPress_IDeal_Plugin::$file)
+				'proanmic_ideal_admin',
+				plugins_url( 'admin/css/admin.css', Pronamic_WordPress_IDeal_Plugin::$file )
 			);
 	
 			// Scripts
 			wp_enqueue_script(
-				'proanmic_ideal_admin' , 
-				plugins_url('js/admin.js', Pronamic_WordPress_IDeal_Plugin::$file) ,
-				array('jquery')
+				'proanmic_ideal_admin',
+				plugins_url( 'admin/js/admin.js', Pronamic_WordPress_IDeal_Plugin::$file ),
+				array( 'jquery' )
 			);
 		}
 	}
@@ -52,7 +109,7 @@ class Pronamic_WordPress_IDeal_Admin {
 	/**
 	 * Load payments page
 	 */
-	public static function loadPaymentsPage() {
+	public static function load_payments_page() {
 		global $wp_list_table;
 		
 		$wp_list_table = new Pronamic_WordPress_IDeal_PaymentsListTable();
@@ -63,49 +120,43 @@ class Pronamic_WordPress_IDeal_Admin {
 	/**
 	 * Maybe test payment
 	 */
-	public static function maybeTestPayment() {
-		if(isset($_POST['test']) && check_admin_referer('test', 'pronamic_ideal_nonce')) {
-			$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_STRING);
+	public static function maybe_test_payment() {
+		if ( isset( $_POST['test_ideal_advanced_v3'] ) && check_admin_referer( 'test_ideal_advanced_v3', 'pronamic_ideal_nonce' ) ) {
+			$id = filter_input( INPUT_GET, 'id', FILTER_SANITIZE_STRING );
 
-			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById($id);
+			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $id );
+			
+			$test = filter_input( INPUT_POST, 'test_ideal_advanced_v3', FILTER_SANITIZE_STRING, FILTER_REQUIRE_ARRAY );
+			$test = key( $test );
+			
+			$data = new Pronamic_WordPress_IDeal_IDealTestDataProxy( wp_get_current_user(), $test );
+			
+			$gateway = new Pronamic_Gateways_IDealAdvancedV3_Gateway( $configuration );
+			
+			$gateway->start( $data );
+			
+			Pronamic_WordPress_IDeal_IDeal::create_payment( $configuration, $gateway, $data );
 
-			if($configuration != null) {
-				$variant = $configuration->getVariant();
-		
-				if($variant !== null) {
-					$data = filter_input(INPUT_POST, 'test', FILTER_SANITIZE_STRING, FILTER_REQUIRE_ARRAY);
-					$testCase = key($data);
-					
-					$name = sprintf(__('Test Case %s', 'pronamic_ideal'), $testCase);
+			$gateway->redirect();
+		}
 
-					$entranceCode = uniqid();
-					$purchaseId = $name;
+		if ( isset( $_POST['test_ideal_advanced'] ) && check_admin_referer( 'test_ideal_advanced', 'pronamic_ideal_nonce' ) ) {
+			$id = filter_input( INPUT_GET, 'id', FILTER_SANITIZE_STRING );
 
-					$transaction = new Pronamic_IDeal_Transaction();
-					$transaction->setAmount($testCase); 
-					$transaction->setCurrency('EUR');
-					$transaction->setExpirationPeriod('PT1H');
-					$transaction->setLanguage('nl');
-					$transaction->setEntranceCode($entranceCode);
-					$transaction->setDescription($name);
-					$transaction->setPurchaseId($purchaseId);
-		
-					$payment = new Pronamic_WordPress_IDeal_Payment();
-					$payment->configuration = $configuration;
-					$payment->transaction = $transaction;
-					// $payment->setSource('pronamic_ideal', uniqid());
-		
-					$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updatePayment($payment);
-					
-					$issuerId = filter_input(INPUT_POST, 'pronamic_ideal_issuer_id', FILTER_SANITIZE_STRING);
+			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $id );
+			
+			$test = filter_input( INPUT_POST, 'test_ideal_advanced', FILTER_SANITIZE_STRING, FILTER_REQUIRE_ARRAY );
+			$test = key( $test );
+			
+			$data = new Pronamic_WordPress_IDeal_IDealTestDataProxy( wp_get_current_user(), $test );
+			
+			$gateway = new Pronamic_Gateways_IDealAdvanced_Gateway( $configuration );
+			
+			$gateway->start( $data );
 
-					$url = Pronamic_WordPress_IDeal_IDeal::handleTransaction($issuerId, $payment, $variant);
+			Pronamic_WordPress_IDeal_IDeal::create_payment( $configuration, $gateway, $data );
 
-					wp_redirect($url, 303);
-
-					exit;
-				}
-			}
+			$gateway->redirect();
     	}
 	}
 
@@ -153,6 +204,15 @@ class Pronamic_WordPress_IDeal_Admin {
 
 		add_submenu_page(
 			'pronamic_ideal', 
+			__( 'Status', 'pronamic_ideal' ), 
+			__( 'Status', 'pronamic_ideal' ), 
+			'pronamic_ideal_status', 
+			'pronamic_ideal_status', 
+			array( __CLASS__, 'page_status' )
+		);
+
+		add_submenu_page(
+			'pronamic_ideal', 
 			__( 'Variants', 'pronamic_ideal' ), 
 			__( 'Variants', 'pronamic_ideal' ), 
 			'pronamic_ideal_variants', 
@@ -193,19 +253,19 @@ class Pronamic_WordPress_IDeal_Admin {
 	 * @param string $id
 	 * @return string url
 	 */
-	public static function getLink($page = null, $view = null, $id = null) {
+	public static function getLink( $page = null, $view = null, $id = null ) {
 		$link = 'admin.php';
 
-		if($page != null) {
-			$link = add_query_arg('page', $page, $link);
+		if ( $page != null ) {
+			$link = add_query_arg( 'page', $page, $link );
 		}
 
-		if($page != null) {
-			$link = add_query_arg('view', $view, $link);
+		if ( $page != null ) {
+			$link = add_query_arg( 'view', $view, $link );
 		}
 
-		if($id != null) {
-			$link = add_query_arg('id', $id, $link);
+		if ( $id != null ) {
+			$link = add_query_arg( 'id', $id, $link );
 		}
 
 		return $link;
@@ -220,76 +280,80 @@ class Pronamic_WordPress_IDeal_Admin {
 	 * @return string url
 	 */
 	public static function getConfigurationsLink() {
-		return add_query_arg(array(
-			'page' => Pronamic_WordPress_IDeal_Plugin::SLUG 
+		return add_query_arg( array(
+			'page' => 'pronamic_ideal' 
 		), 'admin.php');
 	}
 
 	public static function getConfigurationEditLink($id = null) {
-		return add_query_arg(array(
-			'page' => Pronamic_WordPress_IDeal_Plugin::SLUG ,
+		return add_query_arg( array(
+			'page' => 'pronamic_ideal',
 			'view' => 'edit' ,
-			'id' => $id   
+			'id'   => $id   
 		), 'admin.php');
 	}
 
 	public static function getConfigurationTestsLink($id = null) {
-		return add_query_arg(array(
-			'page' => Pronamic_WordPress_IDeal_Plugin::SLUG ,
-			'view' => 'tests' ,
-			'id' => $id   
+		return add_query_arg( array(
+			'page' => 'pronamic_ideal',
+			'view' => 'tests',
+			'id'   => $id
 		), 'admin.php');
 	}
 
 	public static function getConfigurationDeleteLink($id = null) {
-		return add_query_arg(array(
-			'page' => Pronamic_WordPress_IDeal_Plugin::SLUG ,
-			'action' => 'delete' ,
-			'id' => $id   
+		return add_query_arg( array(
+			'page'   => 'pronamic_ideal',
+			'action' => 'delete',
+			'id'     => $id
 		), 'admin.php');
 	}
 
 	public static function getPaymentsLink($id = null) {
-		return self::getLink(Pronamic_WordPress_IDeal_Plugin::SLUG . '_payments');
+		return self::getLink( 'pronamic_ideal_payments' );
 	}
 
 	public static function getPaymentDetailsLink($id = null) {
-		return self::getLink(Pronamic_WordPress_IDeal_Plugin::SLUG . '_payments', 'details', $id);
+		return self::getLink( 'pronamic_ideal_payments', 'details', $id );
 	}
 
 	//////////////////////////////////////////////////
 
 	public static function pageIndex() {
-		$view = filter_input(INPUT_GET, 'view', FILTER_SANITIZE_STRING);
+		$view = filter_input( INPUT_GET, 'view', FILTER_SANITIZE_STRING );
 
 		switch($view) {
 			case 'edit':
-		return self::renderView('configuration-edit');
+				return self::renderView( 'configuration-edit' );
 			case 'tests':
-				return self::renderView('configuration-tests');
+				return self::renderView( 'configuration-tests' );
 			default:
 				return self::pageConfigurations();
 		}
 	}
 
 	public static function pageConfigurations() {
-		return self::renderView('configurations');
+		return self::renderView( 'configurations' );
 	}
 
 	public static function pageSettings() {
-		self::renderView('settings');
+		self::renderView( 'settings' );
 	}
 
 	public static function pagePagesGenerator() {
-		self::renderView('pages-generator');
+		self::renderView( 'pages-generator' );
+	}
+
+	public static function page_status() {
+		self::renderView( 'status' );
 	}
 
 	public static function pageVariants() {
-		self::renderView('variants');
+		self::renderView( 'variants' );
 	}
 
 	public static function pageDocumentation() {
-		self::renderView('documentation');
+		self::renderView( 'documentation' );
 	}
 
 	public static function page_branding() {
@@ -297,15 +361,15 @@ class Pronamic_WordPress_IDeal_Admin {
 	}
 
 	public static function pagePayments() {
-		$view = filter_input(INPUT_GET, 'view', FILTER_SANITIZE_STRING);
+		$view = filter_input( INPUT_GET, 'view', FILTER_SANITIZE_STRING );
 
 		switch($view) {
 			case 'details':
-				return self::renderView('payment');
+				return self::renderView( 'payment' );
 			case 'edit':
-				return self::renderView('payment-edit');
+				return self::renderView( 'payment-edit' );
 			default:
-				return self::renderView('payments');
+				return self::renderView( 'payments' );
 		}
 	}
 
@@ -317,9 +381,9 @@ class Pronamic_WordPress_IDeal_Admin {
 	public static function renderView($name) {
 		$result = false;
 
-		$file = plugin_dir_path(Pronamic_WordPress_IDeal_Plugin::$file) . 'views/' . $name . '.php';
+		$file = plugin_dir_path( Pronamic_WordPress_IDeal_Plugin::$file ) . 'views/' . $name . '.php';
 
-		if(is_readable($file)) {
+		if ( is_readable( $file ) ) {
 			include $file;
 			
 			$result = true;

@@ -56,7 +56,7 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @var string
 	 */
-	private $configurationId;
+	private $configuration_id;
 
 	//////////////////////////////////////////////////
 	
@@ -67,30 +67,30 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 		parent::__construct();
 
 		// Setup
-		$this->setup('pronamic_shopp_ideal_configuration');
+		$this->setup( 'pronamic_shopp_ideal_configuration' );
 		
 		// Configuration ID
-		$this->configurationId = $this->settings['pronamic_shopp_ideal_configuration'];
+		$this->configuration_id = $this->settings['pronamic_shopp_ideal_configuration'];
 
 		// Order processing
 		//add_filter('shopp_purchase_order_processing', array($this, 'orderProcessing'), 20, 2);
 
 		// Checkout gateway inputs
-		add_filter('shopp_checkout_gateway_inputs', array($this, 'inputs'), 50);
+		add_filter( 'shopp_checkout_gateway_inputs', array( $this, 'inputs' ), 50 );
 
 		// Order receipt
-		add_filter('shopp_order_receipt', array($this, 'iDealForm'));
-		add_filter('shopp_order_lookup', array($this, 'iDealForm'));
+		add_filter( 'shopp_order_receipt',           array( $this, 'html_form' ) );
+		add_filter( 'shopp_order_lookup',            array( $this, 'html_form' ) );
 
 		// Actions
 		// @see /shopp/core/model/Gateway.php#L122
 		$name = sanitize_key(__CLASS__);
 
-		add_action('shopp_' . $name . '_sale', array($this, 'sale'));
-		add_action('shopp_' . $name . '_auth', array($this, 'auth'));
-		add_action('shopp_' . $name . '_capture', array($this, 'capture'));
-		add_action('shopp_' . $name . '_refund', array($this, 'refund'));
-		add_action('shopp_' . $name . '_void', array($this, 'void'));
+		add_action( 'shopp_' . $name . '_sale',    array( $this, 'sale' ) );
+		add_action( 'shopp_' . $name . '_auth',    array( $this, 'auth' ) );
+		add_action( 'shopp_' . $name . '_capture', array( $this, 'capture' ) );
+		add_action( 'shopp_' . $name . '_refund',  array( $this, 'refund' ) );
+		add_action( 'shopp_' . $name . '_void',    array( $this, 'void' ) );
 	}
 
 	//////////////////////////////////////////////////
@@ -109,7 +109,7 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 		 * the 'shopp_checkout_processed' routine. The 'shopp_checkout_processed' is called
 		 * after / within the 'shopp_process_checkout' routine.
 		 */
-		add_action('shopp_checkout_processed', array($this, 'checkoutProcessed'));
+		add_action( 'shopp_checkout_processed', array( $this, 'checkout_processed' ) );
 
 		/*
 		 * In the Shopp settings checkout page you can require an confirmation for the 
@@ -121,9 +121,9 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 		 * function is probably redirecting the user. We want to make sure all actions
 		 * added by other plugins are executed.
 		 */
-		add_action('shopp_process_order', array($this, 'processOrder'), 50);
+		add_action( 'shopp_process_order',      array( $this, 'process_order' ), 50 );
 		
-		add_action('shopp_order_success', array($this, 'orderSuccess'));		
+		add_action( 'shopp_order_success',      array( $this, 'order_success' ) );		
 	}
 
 	//////////////////////////////////////////////////
@@ -133,8 +133,8 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @param OrderEventMessage $event
 	 */
-	public function sale($event) {
-		$this->auth($event);
+	public function sale( $event ) {
+		$this->auth( $event );
 	}
 
 	/**
@@ -142,21 +142,21 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @param OrderEventMessage $event
 	 */
-	function auth($event) {
-		$Order = $this->Order;
+	function auth( $event ) {
+		$Order       = $this->Order;
 		$OrderTotals = $Order->Cart->Totals;
-		$Billing = $Order->Billing;
-		$Paymethod = $Order->paymethod();
+		$Billing     = $Order->Billing;
+		$Paymethod   = $Order->paymethod();
 
-		shopp_add_order_event($event->order, 'authed', array(
-			'txnid' => time(),
-			'amount' => $OrderTotals->total,
-			'fees' => 0,
-			'gateway' => $Paymethod->processor,
+		shopp_add_order_event( $event->order, 'authed', array(
+			'txnid'     => time(),
+			'amount'    => $OrderTotals->total,
+			'fees'      => 0,
+			'gateway'   => $Paymethod->processor,
 			'paymethod' => $Paymethod->label,
-			'paytype' => $Billing->cardtype,
-			'payid' => $Billing->card
-		));
+			'paytype'   => $Billing->cardtype,
+			'payid'     => $Billing->card
+		) );
 	}
 
 	/**
@@ -164,7 +164,7 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @param OrderEventMessage $event
 	 */
-	function capture(OrderEventMessage $event) {
+	function capture( OrderEventMessage $event ) {
 
 	}
 
@@ -173,7 +173,7 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @param OrderEventMessage $event
 	 */
-	function refund(OrderEventMessage $event) {
+	function refund( OrderEventMessage $event ) {
 
 	}
 
@@ -182,7 +182,7 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @param OrderEventMessage $event
 	 */
-	function void(OrderEventMessage $event) {
+	function void( OrderEventMessage $event ) {
 		
 	}
 
@@ -191,12 +191,12 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	/**
 	 * Checkout processed
 	 */
-	public function checkoutProcessed() {
+	public function checkout_processed() {
 		global $Shopp;
 
-		$issuerId = filter_input(INPUT_POST, 'pronamic_ideal_issuer', FILTER_SANITIZE_STRING);
-		if(!empty($issuerId)) {
-			$Shopp->Order->PronamicIDealIssuerId = $issuerId;
+		$issuer_id = filter_input( INPUT_POST, 'pronamic_ideal_issuer', FILTER_SANITIZE_STRING );
+		if ( ! empty( $issuerId ) ) {
+			$Shopp->Order->PronamicIDealIssuerId = $issuer_id;
 		}
 	}
 
@@ -209,11 +209,11 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * The 'shopp_process_order' action routine is only executed after the 
 	 * confirmation or directly when confirmation is not required. 
 	 */
-	public function processOrder() {
+	public function process_order() {
 		// Sets transaction information to create the purchase record
 		// This call still exists for backward-compatibility (< 1.2)
-		if(version_compare(SHOPP_VERSION, '1.2', '<')) {
-			$this->Order->transaction($this->txnid(), Pronamic_Shopp_Shopp::PAYMENT_STATUS_PENDING);
+		if ( version_compare( SHOPP_VERSION, '1.2', '<' ) ) {
+			$this->Order->transaction( $this->txnid(), Pronamic_Shopp_Shopp::PAYMENT_STATUS_PENDING );
 		}
 
 		return true;
@@ -227,35 +227,23 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * In Shopp version 1.1.9 the 'shopp_order_success' the purchase is given as first parameter, 
 	 * in Shopp version 1.2+ the 'shopp_order_success' the purchase is not passed as parameter anymore
 	 */
-	public function orderSuccess($purchase = null) {
+	public function order_success( $purchase = null ) {
 		// Check if the purchases is passed as first parameter, if not we 
 		// will load the purchase from the global Shopp variable
-		if(empty($purchase)) {
+		if ( empty( $purchase ) ) {
 			global $Shopp;
 
 			$purchase = $Shopp->Purchase;
 		}
 
 		// Check iDEAL configuration
-		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById($this->configurationId);
+		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $this->configuration_id );
 
-		if($configuration !== null) {
-			$variant = $configuration->getVariant();
-
-			switch($variant->getMethod()) {
-				case Pronamic_IDeal_IDeal::METHOD_EASY:
-					// Nothing to do here
-					break;
-				case Pronamic_IDeal_IDeal::METHOD_BASIC:
-					// Nothing to do here
-					break;
-				case Pronamic_IDeal_IDeal::METHOD_OMNIKASSA:
-					// Nothing to do here
-					break;
-				case Pronamic_IDeal_IDeal::METHOD_ADVANCED:
-					$this->processIDealAdvanced($configuration, $purchase);
-
-					break;
+		$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
+		
+		if ( $gateway ) {
+			if ( $gateway->is_http_redirect() ) {
+				$this->process_gateway_http_redirect( $purchase, $configuration, $gateway );
 			}
 		}
 	}
@@ -265,40 +253,18 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	/**
 	 * Process order iDEAL advanced
 	 */
-	public function processIDealAdvanced($configuration, $purchase) {
-		global $Shopp;
+	public function process_gateway_http_redirect( $purchase, $configuration, $gateway ) {
+		$data = new Pronamic_Shopp_IDeal_IDealDataProxy( $purchase, $this );
 
-		$id = $purchase->id;
-		
-		$dataProxy = new Pronamic_Shopp_IDeal_IDealDataProxy($purchase, $this);
+		Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
 
-		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentBySource($dataProxy->getSource(), $dataProxy->getOrderId());
+		$error = $gateway->get_error();
 
-		if($payment == null) {
-			$transaction = new Pronamic_IDeal_Transaction();
-			$transaction->setAmount($dataProxy->getAmount()); 
-			$transaction->setCurrency($dataProxy->getCurrencyAlphabeticCode());
-			$transaction->setExpirationPeriod('PT1H');
-			$transaction->setLanguage($dataProxy->getLanguageIso639Code());
-			$transaction->setEntranceCode(uniqid());
-			$transaction->setDescription($dataProxy->getDescription());
-			$transaction->setPurchaseId($dataProxy->getOrderId());
-	
-			$payment = new Pronamic_WordPress_IDeal_Payment();
-			$payment->configuration = $configuration;
-			$payment->transaction = $transaction;
-			$payment->setSource($dataProxy->getSource(), $dataProxy->getOrderId());
-
-			$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updatePayment($payment);
-    	}
-
-    	$issuerId = $Shopp->Order->PronamicIDealIssuerId;
-
-		$url = Pronamic_WordPress_IDeal_IDeal::handleTransaction($issuerId, $payment, $configuration->getVariant());
-
-		wp_redirect($url, 303);
-
-		exit;
+		if ( is_wp_error( $error ) ) {
+			// @todo what todo?
+		} else {
+	    	$gateway->redirect();
+		}
 	}
 
 	//////////////////////////////////////////////////
@@ -308,37 +274,43 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	 * 
 	 * @param unknown_type $purchase
 	 */
-	private static function isUsed($purchase) {
-		$isUsed = false;
+	private static function is_used( $purchase ) {
+		$is_used = false;
 
-		if(version_compare(SHOPP_VERSION, '1.2', '<')) {
-			$isUsed = $purchase->gateway == self::NAME;
+		if ( version_compare( SHOPP_VERSION, '1.2', '<' ) ) {
+			$is_used = $purchase->gateway == self::NAME;
 		} else {
-			$isUsed = $purchase->gateway == __CLASS__;
+			$is_used = $purchase->gateway == __CLASS__;
 		}
 
-		return $isUsed;
+		return $is_used;
 	}
 	
 	//////////////////////////////////////////////////
 	
 	/**
-	 * iDEAL Form
+	 * HTML Form
 	 */
-	public function iDealForm($content = '') {
+	public function html_form( $content = '' ) {
 		global $Shopp;
 		
 		$purchase = $Shopp->Purchase;
 
-		if(self::isUsed($purchase)) {
-			if(!Pronamic_Shopp_Shopp::isPurchasePaid($purchase)) { 
-				$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById($this->configurationId);
+		if ( self::is_used( $purchase ) ) {
+			if ( ! Pronamic_Shopp_Shopp::is_purchase_paid( $purchase ) ) { 
+				$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $this->configuration_id );
 
-				$dataProxy = new Pronamic_Shopp_IDeal_IDealDataProxy($purchase, $this);
+				$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
 
-				$html = Pronamic_WordPress_IDeal_IDeal::getHtmlForm($dataProxy, $configuration);
+				if ( $gateway ) {
+					$data = new Pronamic_Shopp_IDeal_IDealDataProxy( $purchase, $this );
 
-				$content = $html . $content;
+					Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
+
+					$html = $gateway->get_form_html();
+
+					$content = $html . $content;
+				}
 			}
 		}
 
@@ -350,54 +322,27 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	/**
 	 * Inputs
 	 */
-	public function inputs($inputs) {
+	public function inputs( $inputs ) {
 		$result = '';
 
-		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById($this->configurationId);
+		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $this->configuration_id );
 
-		if($configuration !== null){
-			$variant = $configuration->getVariant();
+		if ( $configuration ) {
+			$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
 
-			if($variant !== null && $variant->getMethod() == Pronamic_IDeal_IDeal::METHOD_ADVANCED){
-				$lists = Pronamic_WordPress_IDeal_IDeal::getTransientIssuersLists($configuration);
+			if ( $gateway ) {
+				$result .= '<div id="pronamic_ideal_inputs">';
+				$result .=     $gateway->get_input_html();
+				$result .= '</div>';
 
-				if($lists) {
-					$result .= '<div id="pronamic_ideal_issuer">';
-					$result .= '	<div class="left">';
-
-					$result .= '		<select name="pronamic_ideal_issuer" id="order-data-pronamic-ideal-issuer"  title="" value="" class="required">';
-					
-					foreach($lists as $list) {
-						foreach($list as $value) {
-							$result .= '	<option value="'.$value->getId().'">' . $value->getName() . '</option>';
-						}
-					}
-
-					$result .= '		</select>';
-
-					$result .= '		<label for="pronamic_ideal_issuer_id">';
-					$result .= '			' . __('iDEAL Issuer', 'pronamic_ideal');
-					$result .= '		</label>';
-					$result .= '	</div>';
-					$result .= '</div>';
-				} elseif($error = Pronamic_WordPress_IDeal_IDeal::getError()) {
-					$result .= '<div class="shopp_error">';
-					$result .= '	' . $error->getConsumerMessage();
-					$result .= '</div>';
-				} else {
-					$result .= '<div class="shopp_error">';
-					$result .= '	' . __('Paying with iDEAL is not possible. Please try again later or pay another way.', 'pronamic_ideal');
-					$result .= '</div>';
-				}
-		
 				// Only show extra fields on this paymethod/gateway
 				$script = '
 					(function($) {
 						$(document).bind("shopp_paymethod", function(event, paymethod) {
 							if(paymethod) {
-								var fields = $("#pronamic_ideal_issuer");
+								var fields = $("#pronamic_ideal_inputs");
 		
-								if(paymethod.indexOf("' . sanitize_key($this->settings['label']) . '") !== -1) {
+								if(paymethod.indexOf("' . sanitize_title_with_dashes( $this->settings['label'] ) . '") !== -1) {
 									fields.show();
 								} else {
 									fields.hide();
@@ -407,7 +352,7 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 					})(jQuery);
 				';
 		
-				add_storefrontjs($script);
+				add_storefrontjs( $script );
 			}
 		}
 
@@ -422,16 +367,16 @@ class Pronamic_Shopp_IDeal_GatewayModule extends GatewayFramework implements Gat
 	function settings() {
 		$configurations = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurations();
 
-		$options = array(__('&mdash; Select configuration &mdash;', 'pronamic_ideal'));
-		foreach($configurations as $configuration) {
+		$options = array( __( '&mdash; Select configuration &mdash;', 'pronamic_ideal' ) );
+		foreach ( $configurations as $configuration ) {
     		$options[$configuration->getId()] = $configuration->getName();
     	}
 
-		$this->ui->menu(0, array(
-			'name' => 'pronamic_shopp_ideal_configuration' , 
-			'keyed' => true , 
-			'label' => __('Select configuration', 'pronamic_ideal') , 
+		$this->ui->menu( 0, array(
+			'name'     => 'pronamic_shopp_ideal_configuration', 
+			'keyed'    => true, 
+			'label'    => __( 'Select configuration', 'pronamic_ideal' ), 
 			'selected' => $this->settings['pronamic_shopp_ideal_configuration'] 
-		), $options);
+		), $options );
 	}	
 }

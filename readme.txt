@@ -4,10 +4,10 @@ Tags: ideal, bank, payment, gravity forms, gravity, forms, form, payment, woocom
 Donate link: http://pronamic.eu/donate/?for=wp-plugin-pronamic-ideal&source=wp-plugin-readme-txt
 Requires at least: 3.0
 Tested up to: 3.4.1
-Stable tag: 1.0
+Stable tag: 1.1
 
-The Pronamic iDEAL plugin allows you to easily offer the iDEAL payment method within your 
-WordPress website.
+The Pronamic iDEAL plugin allows you to easily add the iDEAL payment method to 
+your WordPress website.
 
 == Description ==
 
@@ -125,6 +125,16 @@ Here is a list of known plugin conflicts:
 
 
 == Changelog ==
+
+= 1.1 =
+*	Added support for iDEAL Advanced version 3.3
+*	Added support for ABN AMRO - iDEAL Zelfbouw
+*	Added status page powered by http://www.ideal-status.nl/
+*	Abstracted the gateways classes
+*	WooCommerce - Added support for [Sequential Order Numbers Pro](http://wcdocs.woothemes.com/user-guide/extensions/functionality/sequential-order-numbers/#add-compatibility)
+*	OmniKassa - Added key version field in configuration editor
+*	Jigoshop - Updated the iDEAL gateway settings section
+*	ClassiPress - Added support for HTTP redirect gateways
 
 = 1.0 =
 *	First official release, removed the 'beta' label.

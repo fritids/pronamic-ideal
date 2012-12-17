@@ -23,26 +23,53 @@ class Pronamic_WordPress_IDeal_Payment {
 	 */
 	public $configuration;
 
-	/**
-	 * The transaction
-	 * 
-	 * @var unknown_type
-	 */
-	public $transaction;
+	//////////////////////////////////////////////////
+
+	public $purchase_id;
+
+	public $transaction_id;
+
+	public $amount;
+
+	public $currency;
+
+	public $expiration_period;
+
+	public $language;
+
+	public $entrance_code;
+
+	public $description;
+
+	public $consumer_name;
+
+	public $consumer_account_number;
+
+	public $consumer_iban;
+
+	public $consumer_bic;
+
+	public $consumer_city;
+
+	public $status;
+
+	public $status_requests;
+
+	//////////////////////////////////////////////////
 
 	/**
 	 * The name of the source wich initiated this iDEAL payment
 	 * 
 	 * @var string
 	 */
-	private $source;
+	public $source;
 
 	/**
 	 * The unique ID of the external source
 	 * 
 	 * @var string
 	 */
-	private $sourceId;
+	public $source_id;
 
 	//////////////////////////////////////////////////
 
@@ -59,7 +86,7 @@ class Pronamic_WordPress_IDeal_Payment {
 	 * Constructs and initialize an payment
 	 */
 	public function __construct() {
-		$this->date = new DateTime('now', new DateTimeZone('UTC'));
+		$this->date = new DateTime( 'now', new DateTimeZone( 'UTC' ) );
 	}
 
 	//////////////////////////////////////////////////
@@ -78,7 +105,7 @@ class Pronamic_WordPress_IDeal_Payment {
 	 * 
 	 * @param string $id
 	 */
-	public function setId($id) {
+	public function setId( $id ) {
 		$this->id = $id;
 	}
 
@@ -98,7 +125,7 @@ class Pronamic_WordPress_IDeal_Payment {
 	 * 
 	 * @param DateTime $date
 	 */
-	public function setDate(DateTime $date) {
+	public function setDate( DateTime $date ) {
 		$this->date = $date;
 	}
 
@@ -119,7 +146,7 @@ class Pronamic_WordPress_IDeal_Payment {
 	 * @return string
 	 */
 	public function getSourceId() {
-		return $this->sourceId;
+		return $this->source_id;
 	}
 	
 	/**
@@ -128,8 +155,8 @@ class Pronamic_WordPress_IDeal_Payment {
 	 * @param string $source
 	 * @param string $id
 	 */
-	public function setSource($source, $id) {
+	public function setSource( $source, $id ) {
 		$this->source = $source;
-		$this->sourceId = $id;
+		$this->source_id = $id;
 	}
 }

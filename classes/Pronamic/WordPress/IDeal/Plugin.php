@@ -10,15 +10,6 @@
  */
 class Pronamic_WordPress_IDeal_Plugin {
 	/**
-	 * The slug of this plugin
-	 * 
-	 * @var string
-	 */
-	const SLUG = 'pronamic_ideal';
-
-	//////////////////////////////////////////////////
-
-	/**
 	 * The license provider API URL
 	 * 
 	 * @var string
@@ -39,7 +30,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @var string
 	 */
-	const VERSION = '1.0';
+	const VERSION = '1.1';
 
 	//////////////////////////////////////////////////
 
@@ -74,6 +65,13 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * @var string
 	 */
 	public static $file;
+	
+	/**
+	 * The plugin dirname
+	 *
+	 * @var string
+	 */
+	public static $dirname;
 
 	//////////////////////////////////////////////////
 
@@ -83,7 +81,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * @param string $file
 	 */
 	public static function bootstrap( $file ) {
-		self::$file = $file;
+		self::$file    = $file;
+		self::$dirname = dirname( $file );
 
 		// Load plugin text domain
 		$rel_path = dirname( plugin_basename( self::$file ) ) . '/languages/';
@@ -103,7 +102,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 			// Pronamic_AppThemes_IDeal_AddOn::bootstrap();
 		}
 
-		// Hooks and filters
+		// Admin
 		if ( is_admin() ) {
 			Pronamic_WordPress_IDeal_Admin::bootstrap();
 		}
@@ -114,23 +113,20 @@ class Pronamic_WordPress_IDeal_Plugin {
 		add_action( 'init', array( __CLASS__, 'init' ) );
 		
 		// On template redirect handle an possible return from iDEAL
-		add_action( 'template_redirect', array( __CLASS__, 'handleIDealAdvancedReturn' ) );
-		add_action( 'template_redirect', array( __CLASS__, 'handleIDealInternetKassaReturn' ) );
-		add_action( 'template_redirect', array( __CLASS__, 'handleOmniKassaReturn' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'handle_ideal_advanced_return' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'handle_ideal_internetkassa_return' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'handle_omnikassa_return' ) );
 		
 		// Check the payment status on an iDEAL return
-		add_action( 'pronamic_ideal_return',               array( __CLASS__, 'checkPaymentStatus' ),               10, 2 );
+		add_action( 'pronamic_ideal_advanced_return',      array( __CLASS__, 'checkPaymentStatus' ),               10, 2 );
 		add_action( 'pronamic_ideal_internetkassa_return', array( __CLASS__, 'updateInternetKassaPaymentStatus' ), 10, 2 );
-		add_action( 'pronamic_ideal_omnikassa_return',     array( __CLASS__, 'updateOmniKassaPaymentStatus' ),     10, 2 );
+		add_action( 'pronamic_ideal_omnikassa_return',     array( __CLASS__, 'update_omnikassa_payment_status' ),  10, 2 );
 
 		// The 'pronamic_ideal_check_transaction_status' hook is scheduled the status requests
 		add_action( 'pronamic_ideal_check_transaction_status', array( __CLASS__, 'checkStatus' ) );
 
 		// Show license message if the license is not valid
-		add_action( 'admin_notices', array( __CLASS__, 'maybeShowLicenseMessage' ) );
-
-		// Uninstall
-		register_uninstall_hook( self::$file, array( __CLASS__, 'uninstall' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
 	}
 
 	//////////////////////////////////////////////////
@@ -139,50 +135,9 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * Initialize
 	 */
 	public static function init() {
-		self::maybeDownloadPrivateCertificate();
-		self::maybeDownloadPrivateKey();
-	}
-
-	/**
-	 * Download private certificate
-	 */
-	public static function maybeDownloadPrivateCertificate() {
-		if(isset($_POST['download_private_certificate'])) {
-			$id = filter_input(INPUT_POST, 'pronamic_ideal_configuration_id', FILTER_SANITIZE_STRING);
-
-			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById($id);
-
-			if(!empty($configuration)) {
-				$filename = "ideal-private-certificate-" . $id . ".cer";
-
-				header('Content-Description: File Transfer');
-				header("Content-Disposition: attachment; filename=$filename");
-				header('Content-Type: application/x-x509-ca-cert; charset=' . get_option('blog_charset'), true);
-				echo $configuration->privateCertificate;
-				die();
-			}
-		}
-	}
-
-	/**
-	 * Download private key
-	 */
-	public static function maybeDownloadPrivateKey() {
-		if(isset($_POST['download_private_key'])) {
-			$id = filter_input(INPUT_POST, 'pronamic_ideal_configuration_id', FILTER_SANITIZE_STRING);
-
-			$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById($id);
-
-			if(!empty($configuration)) {
-				$filename = 'ideal-private-key-' . $id . '.key';
-
-				header('Content-Description: File Transfer');
-				header('Content-Disposition: attachment; filename=' . $filename);
-				header('Content-Type: application/pgp-keys; charset=' . get_option('blog_charset'), true);
-				echo $configuration->privateKey;
-				die();
-			}
-		}
+		// Requirements
+		require_once self::$dirname . '/includes/xmlseclibs/xmlseclibs.php';
+		require_once self::$dirname . '/includes/wp-e-commerce.php';
 	}
 
 	//////////////////////////////////////////////////
@@ -192,16 +147,16 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @param string $paymentId
 	 */
-	public static function checkStatus($paymentId = null) {
-		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentById($paymentId);
+	public static function checkStatus( $payment_id = null ) {
+		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentById( $payment_id );
 
-		if($payment !== null) {
+		if ( $payment !== null ) {
 			// http://pronamic.nl/wp-content/uploads/2011/12/iDEAL_Advanced_PHP_EN_V2.2.pdf (page 19)
 			// - No status request after a final status has been received for a transaction;
-			$status = $payment->transaction->getStatus();
+			$status = $payment->status;
 
-			if(empty($status) || $status === Pronamic_IDeal_Transaction::STATUS_OPEN) {
-				self::checkPaymentStatus($payment);
+			if ( empty( $status ) || $status === Pronamic_Gateways_IDealAdvancedV3_Status::OPEN ) {
+				self::checkPaymentStatus( $payment );
 			}
 		} else {
 			// Payment with the specified ID could not be found, can't check the status
@@ -213,34 +168,29 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @param unknown_type $payment
 	 */
-	public static function checkPaymentStatus(Pronamic_WordPress_IDeal_Payment $payment, $canRedirect = false) {
+	public static function checkPaymentStatus( Pronamic_WordPress_IDeal_Payment $payment, $can_redirect = false ) {
 		$configuration = $payment->configuration;
 		$variant = $configuration->getVariant();
 
-		$iDealClient = new Pronamic_IDeal_IDealClient();
-		$iDealClient->setAcquirerUrl($configuration->getPaymentServerUrl());
-		$iDealClient->setPrivateKey($configuration->privateKey);
-		$iDealClient->setPrivateKeyPassword($configuration->privateKeyPassword);
-		$iDealClient->setPrivateCertificate($configuration->privateCertificate);
-		
-		$message = new Pronamic_IDeal_XML_StatusRequestMessage();
+		if ( $variant->getMethod() == 'advanced_v3' ) {
+			$gateway = new Pronamic_Gateways_IDealAdvancedV3_Gateway( $configuration );
 
-		$merchant = $message->getMerchant();
-		$merchant->id = $configuration->getMerchantId();
-		$merchant->subId = $configuration->getSubId();
-		$merchant->authentication = Pronamic_IDeal_IDeal::AUTHENTICATION_SHA1_RSA;
-		$merchant->returnUrl = site_url('/');
-		$merchant->token = Pronamic_IDeal_Security::getShaFingerprint($configuration->privateCertificate);
+			$gateway->update_status( $payment );
 
-		$message->merchant = $merchant;
-		$message->transaction = $payment->transaction;
-		$message->sign($configuration->privateKey, $configuration->privateKeyPassword);
+			$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus( $payment );
+	
+			do_action( 'pronamic_ideal_status_update', $payment, $can_redirect );
+		}
 
-		$responseMessage = $iDealClient->getStatus($message);
+		if ( $variant->getMethod() == 'advanced' ) {
+			$gateway = new Pronamic_Gateways_IDealAdvanced_Gateway( $configuration );
 
-		$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus($payment);
+			$gateway->update_status( $payment );
 
-		do_action('pronamic_ideal_status_update', $payment, $canRedirect);
+			$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus( $payment );
+	
+			do_action( 'pronamic_ideal_status_update', $payment, $can_redirect );
+		}
 	}
 
 	//////////////////////////////////////////////////
@@ -248,18 +198,18 @@ class Pronamic_WordPress_IDeal_Plugin {
 	/**
 	 * Handle iDEAL advanced return
 	 */
-	public static function handleIDealAdvancedReturn() {
-		if(isset($_GET['trxid'], $_GET['ec'])) {
-			$transactionId = filter_input(INPUT_GET, 'trxid', FILTER_SANITIZE_STRING);
-			$entranceCode = filter_input(INPUT_GET, 'ec', FILTER_SANITIZE_STRING);
+	public static function handle_ideal_advanced_return() {
+		if ( isset( $_GET['trxid'], $_GET['ec'] ) ) {
+			$transaction_id = filter_input( INPUT_GET, 'trxid', FILTER_SANITIZE_STRING );
+			$entrance_code = filter_input( INPUT_GET, 'ec', FILTER_SANITIZE_STRING );
 	
-			if(!empty($transactionId) && !empty($entranceCode)) {
-				$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc($transactionId, $entranceCode);
-	
-				if($payment != null) {
-					$canRedirect = true;
-	
-					do_action('pronamic_ideal_return', $payment, $canRedirect);
+			if ( ! empty( $transaction_id ) && ! empty( $entrance_code ) ) {
+				$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc( $transaction_id, $entrance_code );
+
+				if ( $payment != null ) {
+					$can_redirect = true;
+
+					do_action( 'pronamic_ideal_advanced_return', $payment, $can_redirect );
 				}
 			}
 		}
@@ -268,28 +218,30 @@ class Pronamic_WordPress_IDeal_Plugin {
 	/**
 	 * Handle iDEAL kassa return
 	 */
-	public static function handleIDealInternetKassaReturn() {
-		if(isset($_GET['SHASIGN'])) {
+	public static function handle_ideal_internetkassa_return() {
+		if ( isset( $_GET['SHASIGN'] ) ) {
 			$configurations = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurations();
 
-			foreach($configurations as $configuration) {
-				if($configuration->getVariant() instanceof Pronamic_IDeal_VariantInternetKassa) {
+			foreach ( $configurations as $configuration ) {
+				$variant = $configuration->getVariant();
+				
+				if ( $variant != null && $variant->getMethod() == 'internetkassa' ) {
 					$iDeal = new Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa();
 
 					$iDeal->setPspId($configuration->pspId);
 					$iDeal->setPassPhraseIn($configuration->shaInPassPhrase);
 					$iDeal->setPassPhraseOut($configuration->shaOutPassPhrase);
 
-					$file = dirname(Pronamic_WordPress_IDeal_Plugin::$file) . '/other/calculations-parameters-sha-in.txt';
+					$file = self::$dirname . '/other/calculations-parameters-sha-in.txt';
 					$iDeal->setCalculationsParametersIn( file($file, FILE_IGNORE_NEW_LINES) );
 
-					$file = dirname(Pronamic_WordPress_IDeal_Plugin::$file) . '/other/calculations-parameters-sha-out.txt';
+					$file = self::$dirname . '/other/calculations-parameters-sha-out.txt';
 					$iDeal->setCalculationsParametersOut( file($file, FILE_IGNORE_NEW_LINES) );
 
 					$result = $iDeal->verifyRequest($_GET);
 
-					if($result !== false) {
-						do_action('pronamic_ideal_internetkassa_return', $result, $canRedirect = true);
+					if ( $result !== false ) {
+						do_action( 'pronamic_ideal_internetkassa_return', $result, $can_redirect = true );
 						
 						break;
 					}
@@ -304,13 +256,13 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * @param array $data
 	 * @param boolean $canRedirect
 	 */
-	public static function updateInternetKassaPaymentStatus($data, $canRedirect = false) {
+	public static function updateInternetKassaPaymentStatus( $data, $can_redirect = false ) {
 		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentById($data['ORDERID']);
 
-		if($payment != null) {
+		if ( $payment != null ) {
 			$status = null;
 
-			switch($data['STATUS']) {
+			switch ( $data['STATUS'] ) {
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::INCOMPLETE_OR_INVALID:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::AUTHORIZATION_REFUSED:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::AUTHOR_DELETION_REFUSED:
@@ -319,11 +271,12 @@ class Pronamic_WordPress_IDeal_Plugin {
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::PAYMENT_DECLIEND_BY_THE_ACQUIRER:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::PAYMENT_REFUSED:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::REFUND_DECLINED_BY_THE_ACQUIRER:
-					$status = Pronamic_IDeal_Transaction::STATUS_FAILURE;
+					$status = Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_FAILURE;
 					break;
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::CANCELLED_BY_CLIENT:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::AUTHORIZED_AND_CANCELLED:
-					$status = Pronamic_IDeal_Transaction::STATUS_CANCELLED;
+				case Pronamic_Gateways_IDealInternetKassa_Statuses::AUTHORIZED_AND_CANCELLED_64:
+					$status = Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_CANCELLED;
 					break;
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::ORDER_STORED:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::STORED_WAITING_EXTERNAL_RESULT:
@@ -354,41 +307,41 @@ class Pronamic_WordPress_IDeal_Plugin {
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::REFUND_PROCESSED_BY_MERCHANT:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::PAYMENT_REQUESTED:
 				case Pronamic_Gateways_IDealInternetKassa_Statuses::PAYMENT_PROCESSED_BY_MERCHANT:
-					$status = Pronamic_IDeal_Transaction::STATUS_SUCCESS;
+					$status = Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_SUCCESS;
 					break;
 			}
 			
-			if($status != null) {
-				$payment->transaction->setStatus($status);
+			if ( $status != null ) {
+				$payment->status = $status;
 
-				$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus($payment);
+				$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus( $payment );
 			}
 
-			do_action('pronamic_ideal_status_update', $payment, $canRedirect);
+			do_action( 'pronamic_ideal_status_update', $payment, $can_redirect );
 		}
 	}
 
 	/**
 	 * Handle OmniKassa return
 	 */
-	public static function handleOmniKassaReturn() {
-		if(isset($_POST['Data'], $_POST['Seal'])) {
-			$postData = filter_input(INPUT_POST, 'Data', FILTER_SANITIZE_STRING);
-			$postSeal = filter_input(INPUT_POST, 'Seal', FILTER_SANITIZE_STRING);
+	public static function handle_omnikassa_return() {
+		if ( isset( $_POST['Data'], $_POST['Seal'] ) ) {
+			$post_data = filter_input( INPUT_POST, 'Data', FILTER_SANITIZE_STRING );
+			$post_seal = filter_input( INPUT_POST, 'Seal', FILTER_SANITIZE_STRING );
 			
-			if(!empty($postData) && !empty($postSeal)) {
-				$data = Pronamic_IDeal_OmniKassa::parsePipedString($postData);
+			if ( ! empty( $post_data ) && ! empty( $post_seal ) ) {
+				$data = Pronamic_Gateways_OmniKassa_OmniKassa::parsePipedString( $post_data );
 	
-				$transactionReference = $data['transactionReference'];
+				$transaction_reference = $data['transactionReference'];
 
-				$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc($transactionReference);
+				$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc( $transaction_reference );
 
-				if($payment != null) {
-					$seal = Pronamic_IDeal_OmniKassa::computeSeal($postData, $payment->configuration->getHashKey());
+				if ( $payment != null ) {
+					$seal = Pronamic_Gateways_OmniKassa_OmniKassa::computeSeal( $post_data, $payment->configuration->getHashKey() );
 	
 					// Check if the posted seal is equal to our seal
-					if(strcasecmp($postSeal, $seal) === 0) {
-						do_action('pronamic_ideal_omnikassa_return', $data, $canRedirect = true);
+					if ( strcasecmp( $post_seal, $seal ) === 0 ) {
+						do_action( 'pronamic_ideal_omnikassa_return', $data, $can_redirect = true );
 					}
 				}
 			}
@@ -401,30 +354,30 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * @param array $result
 	 * @param boolean $canRedirect
 	 */
-	public static function updateOmniKassaPaymentStatus($data, $canRedirect = false) {
-		$transactionReference = $data['transactionReference'];
+	public static function update_omnikassa_payment_status( $data, $can_redirect = false ) {
+		$transaction_reference = $data['transactionReference'];
 		
-		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc($transactionReference);
+		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc( $transaction_reference );
 		
-		if($payment != null) {
-			$responseCode = $data['responseCode'];
+		if ( $payment != null ) {
+			$response_code = $data['responseCode'];
 
-			$status = Pronamic_IDeal_Transaction::STATUS_OPEN;
+			$status = Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_OPEN;
 
-			switch($responseCode) {
-				case Pronamic_IDeal_OmniKassa::RESPONSE_CODE_TRANSACTION_SUCCES:
-					$status = Pronamic_IDeal_Transaction::STATUS_SUCCESS;
+			switch ( $response_code ) {
+				case Pronamic_Gateways_OmniKassa_OmniKassa::RESPONSE_CODE_TRANSACTION_SUCCES:
+					$status = Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_SUCCESS;
 					break;
-				case Pronamic_IDeal_OmniKassa::RESPONSE_CODE_CANCELLATION_OF_PAYMENT:
-					$status = Pronamic_IDeal_Transaction::STATUS_CANCELLED;
+				case Pronamic_Gateways_OmniKassa_OmniKassa::RESPONSE_CODE_CANCELLATION_OF_PAYMENT:
+					$status = Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_CANCELLED;
 					break;
 			}
 			
-			$payment->transaction->setStatus($status);
+			$payment->status = $status;
 
-			$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus($payment);
+			$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus( $payment );
 
-			do_action('pronamic_ideal_status_update', $payment, $canRedirect);
+			do_action( 'pronamic_ideal_status_update', $payment, $can_redirect );
 		}
 	}
 
@@ -522,7 +475,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * @return boolean true if plugin can be used, false otherwise
 	 */
 	public static function canBeUsed() {
-		return self::isInstalled() && (self::hasValidKey() || Pronamic_WordPress_IDeal_PaymentsRepository::getNumberPayments() <= self::PAYMENTS_MAX_LICENSE_FREE);
+		return self::isInstalled() && (self::hasValidKey() || Pronamic_WordPress_IDeal_PaymentsRepository::get_number_payments() <= self::PAYMENTS_MAX_LICENSE_FREE);
 	}
 
 	//////////////////////////////////////////////////
@@ -530,26 +483,38 @@ class Pronamic_WordPress_IDeal_Plugin {
 	/**
 	 * Maybe show an license message
 	 */
-	public static function maybeShowLicenseMessage() {
-		if(!self::canBeUsed()): ?>
+	public static function admin_notices() {
+		if ( ! self::canBeUsed() ): ?>
 		
-		<div class="error">
-			<p>
-				<?php 
-				
-				printf(
-					__('<strong>Pronamic iDEAL limited:</strong> You exceeded the maximum free payments of %d, you should enter an valid license key on the %s.', 'pronamic_ideal') , 
-					self::PAYMENTS_MAX_LICENSE_FREE , 
-					sprintf(
-						'<a href="%s">%s</a>' , 
-						add_query_arg('page', 'pronamic_ideal_settings', get_admin_url(null, 'admin.php')) , 
-						__('iDEAL settings page', 'pronamic_ideal')
-					) 
-				);
-				
-				?>
-			</p>
-		</div>
+			<div class="error">
+				<p>
+					<?php 
+					
+					printf(
+						__( '<strong>Pronamic iDEAL limited:</strong> You exceeded the maximum free payments of %d, you should enter an valid license key on the <a href="%s">iDEAL settings page</a>.', 'pronamic_ideal' ),
+						self::PAYMENTS_MAX_LICENSE_FREE, 
+						add_query_arg( 'page', 'pronamic_ideal_settings', get_admin_url( null, 'admin.php' ) )
+					);
+					
+					?>
+				</p>
+			</div>
+
+		<?php elseif ( ! self::hasValidKey() ) : ?>
+		
+			<div class="updated">
+				<p>
+					<?php 
+
+					printf(
+						__( 'You can <a href="%s">enter your Pronamic iDEAL API key</a> to use extra extensions, get support and more then %d payments.', 'pronamic_ideal' ),
+						add_query_arg( 'page', 'pronamic_ideal_settings', get_admin_url( null, 'admin.php' ) ),
+						self::PAYMENTS_MAX_LICENSE_FREE
+					);
+
+					?>
+				</p>
+			</div>
 		
 		<?php endif;
 	}
@@ -561,24 +526,24 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @param array $roles
 	 */
-	public static function setRoles($roles) {
+	public static function set_roles( $roles ) {
 		global $wp_roles;
 
-		if(!isset($wp_roles)) {
+		if ( ! isset( $wp_roles ) ) {
 			$wp_roles = new WP_Roles();
 		}
 
-		foreach($roles as $role => $data) {
-			if(isset($data['display_name'], $data['capabilities'])) {
+		foreach ( $roles as $role => $data ) {
+			if ( isset( $data['display_name'], $data['capabilities'] ) ) {
 				$display_name = $data['display_name'];
 				$capabilities = $data['capabilities'];
 	
-				if($wp_roles->is_role($role)) {
-					foreach($capabilities as $cap => $grant) {
-						$wp_roles->add_cap($role, $cap, $grant);
+				if ( $wp_roles->is_role( $role ) ) {
+					foreach ( $capabilities as $cap => $grant ) {
+						$wp_roles->add_cap( $role, $cap, $grant );
 					}
 				} else {
-					$wp_roles->add_role($role, $display_name, $capabilities);
+					$wp_roles->add_role( $role, $display_name, $capabilities );
 				}
 			}
 		}
@@ -590,60 +555,40 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * Setup, creates or updates database tables. Will only run when version changes
 	 */
 	public static function setup() {
-		if(get_option(self::OPTION_VERSION) != self::VERSION) {
+		if ( get_option( self::OPTION_VERSION ) != self::VERSION ) {
 			// Update tables
-			Pronamic_WordPress_IDeal_ConfigurationsRepository::updateTable();
-			Pronamic_WordPress_IDeal_PaymentsRepository::updateTable();
+			Pronamic_WordPress_IDeal_ConfigurationsRepository::update_table();
+			Pronamic_WordPress_IDeal_PaymentsRepository::update_table();
 
 			// Add some new capabilities
 			$capabilities = array(
-				'read' => true , 
-				'pronamic_ideal' => true ,
-				'pronamic_ideal_configurations' => true ,
-				'pronamic_ideal_payments' => true ,  
-				'pronamic_ideal_settings' => true ,
-				'pronamic_ideal_pages_generator' => true , 
-				'pronamic_ideal_variants' => true ,
-				'pronamic_ideal_documentation' => true , 
-				'pronamic_ideal_branding' => true
+				'read'                           => true, 
+				'pronamic_ideal'                 => true,
+				'pronamic_ideal_configurations'  => true,
+				'pronamic_ideal_payments'        => true,
+				'pronamic_ideal_settings'        => true,
+				'pronamic_ideal_pages_generator' => true,
+				'pronamic_ideal_status'          => true,
+				'pronamic_ideal_variants'        => true,
+				'pronamic_ideal_documentation'   => true,
+				'pronamic_ideal_branding'        => true
 			);
 			
 			$roles = array(
 				'pronamic_ideal_administrator' => array(
-					'display_name' => __('iDEAL Administrator', 'pronamic_ideal') ,	
+					'display_name' => __( 'iDEAL Administrator', 'pronamic_ideal' ),
 					'capabilities' => $capabilities
 				) , 
 				'administrator' => array(
-					'display_name' => __('Administrator', 'pronamic_ideal') ,	
+					'display_name' => __( 'Administrator', 'pronamic_ideal' ),
 					'capabilities' => $capabilities
 				)
 			);
 			
-			self::setRoles($roles);
+			self::set_roles( $roles );
 
 			// Update version
-			update_option(self::OPTION_VERSION, self::VERSION);
+			update_option( self::OPTION_VERSION, self::VERSION );
 		}
-	}
-
-	//////////////////////////////////////////////////
-
-	/**
-	 * Uninstall
-	 */
-	public static function uninstall() {
-		// Drop tables
-		Pronamic_WordPress_IDeal_ConfigurationsRepository::dropTables();
-		Pronamic_WordPress_IDeal_PaymentsRepository::dropTables();
-
-		// Delete options
-		delete_option( self::OPTION_VERSION );
-		delete_option( self::OPTION_KEY );
-		
-		// Delete transient
-		delete_transient( self::TRANSIENT_LICENSE_INFO );
-		
-		// Uninstall Add-Ons
-		Pronamic_GravityForms_IDeal_AddOn::uninstall();
 	}
 }

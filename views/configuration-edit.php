@@ -47,6 +47,16 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 	// Basic
 	$configuration->hashKey = filter_input(INPUT_POST, 'pronamic_ideal_hash_key', FILTER_SANITIZE_STRING);
 
+	// OmniKassa
+	$configuration->keyVersion = filter_input( INPUT_POST, 'pronamic_ideal_key_version', FILTER_SANITIZE_STRING );
+	
+	// Mollie
+	$configuration->molliePartnerId = filter_input(INPUT_POST, 'pronamic_ideal_mollie_partner_id', FILTER_SANITIZE_STRING);
+	$configuration->mollieProfileKey = filter_input(INPUT_POST, 'pronamic_ideal_mollie_profile_key', FILTER_SANITIZE_STRING);
+	
+	// TargetPay
+	$configuration->targetPayLayoutCode = filter_input(INPUT_POST, 'pronamic_ideal_targetpay_layoutcode', FILTER_SANITIZE_STRING);
+	
 	// Kassa
 	$configuration->pspId = filter_input(INPUT_POST, 'pronamic_ideal_pspid', FILTER_SANITIZE_STRING);
 	$configuration->shaInPassPhrase = filter_input(INPUT_POST, 'pronamic_ideal_sha_in_pass_phrase', FILTER_SANITIZE_STRING);
@@ -107,7 +117,8 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 		$configargs = array(
 			'private_key_bits' => 1024 , 
 			'private_key_type' => OPENSSL_KEYTYPE_RSA , 
-			'encrypt_key' => false
+			'encrypt_key' => false,
+			'encrypt_key_cipher' => OPENSSL_CIPHER_AES_128_CBC
 		);
 
 		$privateKeyResource = openssl_pkey_new($configargs);
@@ -159,7 +170,7 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 
 ?>
 <div class="wrap">
-	<?php screen_icon(Pronamic_WordPress_IDeal_Plugin::SLUG); ?>
+	<?php screen_icon( 'pronamic_ideal' ); ?>
 
 	<h2>
 		<?php _e('iDEAL Configuration', 'pronamic_ideal'); ?>
@@ -234,9 +245,9 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 				</td>
 			</tr>
 
-			<?php /* Easy, Basic, OmniKassa, Advanced */ ?>
+			<?php /* Basic, OmniKassa, Advanced */ ?>
 
-			<tr class="extra-settings method-basic method-omnikassa method-advanced">
+			<tr class="extra-settings method-basic method-omnikassa method-advanced method-advanced_v3">
 				<th scope="row">
 					<label for="pronamic_ideal_merchant_id">
 						<?php _e('Merchant ID', 'pronamic_ideal'); ?>
@@ -252,9 +263,9 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 				</td>
 			</tr>
 
-			<?php /* Basic, OmniKassa, Advanced */ ?>
+			<?php /* Basic, Advanced */ ?>
 
-			<tr class="extra-settings method-basic method-omnikassa method-advanced">
+			<tr class="extra-settings method-basic method-advanced method-advanced_v3">
 				<th scope="row">
 					<label for="pronamic_ideal_sub_id">
 						<?php _e('Sub ID', 'pronamic_ideal'); ?>
@@ -270,7 +281,25 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 				</td>
 			</tr>
 
-			<?php /* Basic */ ?>
+			<?php /* OmniKassa */ ?>
+
+			<tr class="extra-settings method-omnikassa">
+				<th scope="row">
+					<label for="pronamic_ideal_key_version">
+						<?php _e( 'Key Version', 'pronamic_ideal' ); ?>
+					</label>
+				</th>
+				<td>
+	                <input id="pronamic_ideal_key_version" name="pronamic_ideal_key_version" value="<?php echo $configuration->keyVersion; ?>" type="text" />
+
+					<span class="description">
+						<br />
+						<?php printf( __( 'You can find the key version in the <a href="%s" target="_blank">OmniKassa Download Dashboard</a>.', 'pronamic_ideal' ), 'https://download.omnikassa.rabobank.nl/' ); ?>
+					</span>
+				</td>
+			</tr>
+
+			<?php /* Basic, OmniKassa */ ?>
 
 			<tr class="extra-settings method-basic method-omnikassa">
 				<th scope="row">
@@ -288,7 +317,58 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 				</td>
 			</tr>
 
-			<?php /* Kassa */ ?>
+			<?php /* Mollie */ ?>
+
+			<tr class="extra-settings method-mollie">
+				<th scope="row">
+					<label for="pronamic_ideal_mollie_partner_id">
+						<?php _e('Partner ID', 'pronamic_ideal'); ?>
+					</label>
+				</th>
+				<td>
+					<input id="pronamic_ideal_mollie_partner_id" name="pronamic_ideal_mollie_partner_id" value="<?php echo $configuration->molliePartnerId; ?>" type="text" class="regular-text" />
+
+					<span class="description">
+						<br />
+						<?php _e('Mollie.nl accountnummer. Op het gespecificeerde account wordt na succesvolle betaling tegoed bijgeschreven.', 'pronamic_ideal'); ?>
+					</span>
+				</td>
+			</tr>
+			<tr class="extra-settings method-mollie">
+				<th scope="row">
+					<label for="pronamic_ideal_mollie_profile_key">
+						<?php _e('Profile Key', 'pronamic_ideal'); ?>
+					</label>
+				</th>
+				<td>
+					<input id="pronamic_ideal_mollie_profile_key" name="pronamic_ideal_mollie_profile_key" value="<?php echo $configuration->mollieProfileKey; ?>" type="text" class="regular-text" />
+
+					<span class="description">
+						<br />
+						<?php _e('Hiermee kunt u een ander websiteprofielen selecteren om uw betaling aan te linken. Gebruik de waarde uit het veld Key uit het profiel overzicht. [ bekijk overzicht van uw profielen ].', 'pronamic_ideal'); ?>
+					</span>
+				</td>
+			</tr>
+
+			<?php /* TargetPay */ ?>
+
+			<tr class="extra-settings method-targetpay">
+				<th scope="row">
+					<label for="pronamic_ideal_targetpay_layoutcode">
+						<?php _e('Layout Code', 'pronamic_ideal'); ?>
+					</label>
+				</th>
+				<td>
+					<input id="pronamic_ideal_targetpay_layoutcode" name="pronamic_ideal_targetpay_layoutcode" value="<?php echo $configuration->targetPayLayoutCode; ?>" type="text" class="regular-text" />
+
+					<span class="description">
+						<br />
+						<?php _e('De layoutcode waarop de betaling geboekt moet worden. Zie subaccounts.', 'pronamic_ideal'); ?>
+					</span>
+				</td>
+			</tr>
+
+			<?php /* Easy, Kassa */ ?>
 
 			<tr class="extra-settings method-easy method-internetkassa">
 				<th scope="row">
@@ -302,6 +382,17 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 					<span class="description">
 						<br />
 						<?php _e('You receive the PSPID from your iDEAL provider.', 'pronamic_ideal'); ?>
+					</span>
+					<span class="description extra-settings method-easy">
+						<br />
+						<?php 
+						
+						printf( 
+							__( 'If you use the ABN AMRO - IDEAL Easy variant you can use <code>%s</code>.', 'pronamic_ideal' ),
+							'TESTiDEALEASY'
+						); 
+
+						?>
 					</span>
 				</td>
 			</tr>
@@ -338,7 +429,7 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 
 			<?php /* Advanced */ ?>
 
-			<tr class="extra-settings method-advanced">
+			<tr class="extra-settings method-advanced method-advanced_v3">
 				<th scope="row">
 					<label for="pronamic_ideal_private_key_password">
 						<?php _e('Private Key Password', 'pronamic_ideal'); ?>
@@ -348,7 +439,7 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 					<input id="pronamic_ideal_private_key_password" name="pronamic_ideal_private_key_password" value="<?php echo $configuration->privateKeyPassword; ?>" type="text" class="regular-text" />
 				</td>
 			</tr>
-			<tr class="extra-settings method-advanced">
+			<tr class="extra-settings method-advanced method-advanced_v3">
 				<th scope="row">
 					<label for="pronamic_ideal_private_key">
 						<?php _e('Private Key', 'pronamic_ideal'); ?>
@@ -370,7 +461,7 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 					?>
 				</td>
 			</tr>
-			<tr class="extra-settings method-advanced">
+			<tr class="extra-settings method-advanced method-advanced_v3">
 				<th scope="row">
 					<label for="pronamic_ideal_private_certificate">
 						<?php _e('Private Certificate', 'pronamic_ideal'); ?>
@@ -385,7 +476,7 @@ if(!empty($_POST) && check_admin_referer('pronamic_ideal_save_configuration', 'p
 					<?php 
 					
 					if(!empty($configuration->privateCertificate)) {
-						$fingerprint = Pronamic_IDeal_Security::getShaFingerprint($configuration->privateCertificate);
+						$fingerprint = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint($configuration->privateCertificate);
 						$fingerprint = str_split($fingerprint, 2);
 						$fingerprint = implode(':', $fingerprint);
 					

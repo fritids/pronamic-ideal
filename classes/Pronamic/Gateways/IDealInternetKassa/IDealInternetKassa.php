@@ -81,7 +81,7 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	public function __construct() {
 		$this->fields = array();
 
-		$this->calculationsParametersIn = array();
+		$this->calculationsParametersIn  = array();
 		$this->calculationsParametersOut = array();
 
 		$this->hashAlgorithm = self::HASH_ALGORITHM_SHA_1;
@@ -594,9 +594,9 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * @return array
 	 */
 	private function getSignatureFieldsIn($fields) {
-		$calculationsParameters = array_flip($this->calculationsParametersIn);
+		$calculationsParameters = array_flip( $this->calculationsParametersIn );
 
-		return array_intersect_key($fields, $calculationsParameters);
+		return array_intersect_key( $fields, $calculationsParameters );
 	}
 
 	/**
@@ -605,10 +605,10 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * @param array $fields
 	 * @return array
 	 */
-	private function getSignatureFieldsOut($fields) {
-		$calculationsParameters = array_flip($this->calculationsParametersOut);
+	private function getSignatureFieldsOut( $fields ) {
+		$calculationsParameters = array_flip( $this->calculationsParametersOut );
 
-		return array_intersect_key($fields, $calculationsParameters);
+		return array_intersect_key( $fields, $calculationsParameters );
 	}
 
 	//////////////////////////////////////////////////
@@ -620,29 +620,28 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * @param string $passprahse
 	 * @return string
 	 */
-	private function getSignature($fields, $passprahse) {
+	private function getSignature( $fields, $passprahse ) {
 		// This string is constructed by concatenating the values of the fields sent with the order (sorted
 		// alphabetically, in the format ‘parameter=value’), separated by a passphrase.		
 		$string = '';
 
-		// all parameters need to be put alphabetically
-		ksort($fields);
+		// All parameters need to be put alphabetically
+		ksort( $fields );
 
-		foreach($fields as $name => $value) {
-			// all parameters need to be put alphabetically
-			if(!empty($value)) {
-				// all parameters need to be put alphabetically
-				$name = strtoupper($name);
+		// Loop
+		foreach ( $fields as $name => $value ) {
+			if ( !empty( $value ) ) {
+				$name = strtoupper( $name );
 		
 				$string .= $name . '=' . $value . $passprahse;
 			}
 		}
 
 		// Hash
-		$result = hash($this->hashAlgorithm, $string);
+		$result = hash( $this->hashAlgorithm, $string );
 
 		// String to uppercase
-		$result = strtoupper($result);
+		$result = strtoupper( $result );
 
 		return $result;
 	}
@@ -655,9 +654,9 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * @return string
 	 */
 	public function getSignatureIn() {
-		$fields = $this->getSignatureFieldsIn($this->fields);
+		$fields = $this->getSignatureFieldsIn( $this->fields );
 
-		return $this->getSignature($fields, $this->getPassPhraseIn());
+		return $this->getSignature( $fields, $this->getPassPhraseIn() );
 	}
 
 	/**
@@ -665,10 +664,10 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * 
 	 * @param array $fields
 	 */
-	public function getSignatureOut($fields) {
-		$fields = $this->getSignatureFieldsOut($fields);
+	public function getSignatureOut( $fields ) {
+		$fields = $this->getSignatureFieldsOut( $fields );
 
-		return $this->getSignature($fields, $this->getPassPhraseOut());
+		return $this->getSignature( $fields, $this->getPassPhraseOut() );
 	}
 
 	//////////////////////////////////////////////////
@@ -679,37 +678,37 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * @return string
 	 */
 	public function getHtmlFields() {
-		return Pronamic_IDeal_IDeal::htmlHiddenFields(array(
+		return Pronamic_IDeal_IDeal::htmlHiddenFields( array(
 			// general parameters
-			'PSPID' => $this->getPspId() ,
-			'orderID' => $this->getOrderId() , 
-			'amount' => Pronamic_IDeal_IDeal::formatPrice($this->getAmount()) , 
-			'currency' => $this->getCurrency() , 
-			'language' => $this->getLanguage() , 
+			'PSPID'        => $this->getPspId(),
+			'orderID'      => $this->getOrderId(), 
+			'amount'       => Pronamic_IDeal_IDeal::formatPrice( $this->getAmount() ), 
+			'currency'     => $this->getCurrency(),
+			'language'     => $this->getLanguage(),
 		
-			'CN' => $this->getCustomerName() , 
-			'EMAIL' => $this->getEMailAddress() ,
+			'CN'           => $this->getCustomerName(), 
+			'EMAIL'        => $this->getEMailAddress(),
 
-			'owneraddress' => $this->getOwnerAddress() , 
-			'ownerZIP' => $this->getOwnerZip() , 
-			'ownertown' => '' ,
-			'ownercty' => $this->getOwnerCountry() ,  
-			'ownertelno' => '' , 
+			'owneraddress' => $this->getOwnerAddress(),
+			'ownerZIP'     => $this->getOwnerZip(),
+			'ownertown'    => '',
+			'ownercty'     => $this->getOwnerCountry(),  
+			'ownertelno'   => '',
 
-			'COM' => $this->getOrderDescription() , 
+			'COM'          => $this->getOrderDescription(), 
 
 			// check before the payment: see Security: Check before the Payment
-			'SHASign' => $this->getSignatureIn() , 
+			'SHASign'      => $this->getSignatureIn(),
 
 			// layout information: see Look and Feel of the Payment Page
 			// ?
 
 			// post payment redirection: see Transaction Feedback to the Customer
-			'accepturl' => $this->getAcceptUrl() , 
-			'declineurl' => $this->getDeclineUrl() , 
-			'exceptionurl' => $this->getExceptionUrl() , 
-			'cancelurl' => $this->getCancelUrl()
-		));
+			'accepturl'    => $this->getAcceptUrl(),
+			'declineurl'   => $this->getDeclineUrl(),
+			'exceptionurl' => $this->getExceptionUrl(),
+			'cancelurl'    => $this->getCancelUrl()
+		) );
 	}
 
 	//////////////////////////////////////////////////
@@ -717,30 +716,30 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	/**
 	 * Verify request
 	 */
-	public function verifyRequest($data) {
+	public function verifyRequest( $data ) {
 		$result = false;
 
-		$data = array_change_key_case($data, CASE_UPPER);
+		$data = array_change_key_case( $data, CASE_UPPER );
 
-		if(isset($data['SHASIGN'])) {
+		if ( isset( $data['SHASIGN'] ) ) {
 			$signature = $data['SHASIGN'];
 
-			$signatureOut = $this->getSignatureOut($data);
+			$signatureOut = $this->getSignatureOut( $data );
 
-			if(strcasecmp($signature, $signatureOut) === 0) {
-				$result = filter_var_array($data, array(
-					Pronamic_Gateways_IDealInternetKassa_Parameters::ORDERID => FILTER_SANITIZE_STRING ,
-					Pronamic_Gateways_IDealInternetKassa_Parameters::AMOUNT => FILTER_VALIDATE_FLOAT , 
-					Pronamic_Gateways_IDealInternetKassa_Parameters::CURRENCY => FILTER_SANITIZE_STRING ,
-					'PM' => FILTER_SANITIZE_STRING , 
-					'ACCEPTANCE' => FILTER_SANITIZE_STRING , 
-					'STATUS' => FILTER_VALIDATE_INT , 
-					'CARDNO' => FILTER_SANITIZE_STRING , 
-					'PAYID' => FILTER_VALIDATE_INT , 
-					'NCERROR' => FILTER_SANITIZE_STRING , 
-					'BRAND' => FILTER_SANITIZE_STRING , 
-					'SHASIGN' => FILTER_SANITIZE_STRING 
-				));
+			if ( strcasecmp( $signature, $signatureOut ) === 0 ) {
+				$result = filter_var_array( $data, array(
+					Pronamic_Gateways_IDealInternetKassa_Parameters::ORDERID  => FILTER_SANITIZE_STRING,
+					Pronamic_Gateways_IDealInternetKassa_Parameters::AMOUNT   => FILTER_VALIDATE_FLOAT, 
+					Pronamic_Gateways_IDealInternetKassa_Parameters::CURRENCY => FILTER_SANITIZE_STRING,
+					'PM'         => FILTER_SANITIZE_STRING, 
+					'ACCEPTANCE' => FILTER_SANITIZE_STRING, 
+					'STATUS'     => FILTER_VALIDATE_INT,
+					'CARDNO'     => FILTER_SANITIZE_STRING, 
+					'PAYID'      => FILTER_VALIDATE_INT,
+					'NCERROR'    => FILTER_SANITIZE_STRING, 
+					'BRAND'      => FILTER_SANITIZE_STRING, 
+					'SHASIGN'    => FILTER_SANITIZE_STRING 
+				) );
 			} 
 		}
 		
