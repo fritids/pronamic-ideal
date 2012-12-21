@@ -66,7 +66,34 @@ class Pronamic_WooCommerce_IDeal_IDealDataProxy extends Pronamic_WordPress_IDeal
 	 */
 	public function getOrderId() {
 		// @see https://github.com/woothemes/woocommerce/blob/v1.6.5.2/classes/class-wc-order.php#L269
-		return $this->order->get_order_number();
+		$order_id = $this->order->get_order_number();
+
+		/*
+		 * An '#' charachter can result in the following iDEAL error:
+		 * code             = SO1000
+		 * message          = Failure in system
+		 * detail           = System generating error: issuer
+		 * consumer_message = Paying with iDEAL is not possible. Please try again later or pay another way.
+		 * 
+		 * Or in case of Sisow:
+		 * <errorresponse xmlns="https://www.sisow.nl/Sisow/REST" version="1.0.0">
+		 *     <error>
+		 *         <errorcode>TA3230</errorcode>
+		 *         <errormessage>No purchaseid</errormessage>
+		 *     </error>
+		 * </errorresponse>
+		 * 
+		 * @see http://wcdocs.woothemes.com/user-guide/extensions/functionality/sequential-order-numbers/#add-compatibility
+		 * 
+		 * @see page 30 http://pronamic.nl/wp-content/uploads/2012/09/iDEAL-Merchant-Integratie-Gids-NL.pdf
+		 * 
+		 * The use of characters that are not listed above will not lead to a refusal of a batch or post, but the 
+		 * character will be changed by Equens (formerly Interpay) to a space, question mark or asterisk. The 
+		 * same goes for diacritical characters (à, ç, ô, ü, ý etcetera).
+		 */
+		$order_id = str_replace( '#', '', $order_id );
+
+		return $order_id;
 	}
 
 	/**

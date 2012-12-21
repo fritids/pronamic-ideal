@@ -35,7 +35,7 @@ class Pronamic_Gateways_OmniKassa_Gateway extends Pronamic_Gateways_Gateway {
 		
 		$this->client->setPaymentServerUrl( $configuration->getPaymentServerUrl() );
 		$this->client->setMerchantId( $configuration->getMerchantId() );
-		$this->client->setKeyVersion( $configuration->getSubId() );
+		$this->client->setKeyVersion( $configuration->keyVersion );
 		$this->client->setSecretKey( $configuration->getHashKey() );
 	}
 	
@@ -48,8 +48,8 @@ class Pronamic_Gateways_OmniKassa_Gateway extends Pronamic_Gateways_Gateway {
 	 * @param Pronamic_IDeal_IDealDataProxy $data
 	 */
 	public function start( Pronamic_IDeal_IDealDataProxy $data ) {
-		$this->transaction_id = md5( time() . $data->getOrderId() );
-		$this->action_url     = $this->client->getPaymentServerUrl();
+		$this->set_transaction_id( md5( time() . $data->getOrderId() ) );
+		$this->set_action_url( $this->client->getPaymentServerUrl() );
 
 		$this->client->setCustomerLanguage( $data->getLanguageIso639Code() );
 		$this->client->setCurrencyNumericCode( $data->getCurrencyNumericCode() );
@@ -57,7 +57,7 @@ class Pronamic_Gateways_OmniKassa_Gateway extends Pronamic_Gateways_Gateway {
 		$this->client->setNormalReturnUrl( site_url( '/' ) );
 		$this->client->setAutomaticResponseUrl( site_url( '/' ) );
 		$this->client->setAmount( $data->getAmount() );
-		$this->client->setTransactionReference( $this->transaction_id );
+		$this->client->setTransactionReference( $this->get_transaction_id() );
 	}
 	
 	/////////////////////////////////////////////////

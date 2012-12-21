@@ -100,13 +100,13 @@ class Pronamic_Gateways_IDealAdvancedV3_Gateway extends Pronamic_Gateways_Gatewa
 
 		$error = $this->client->get_error();
 		
-		if ( $error !== null ) {
-			var_dump( $error );
+		if ( is_wp_error( $error ) ) {
+			$this->set_error( $error );
 		} else {
 			$issuer = $result->issuer;
 
-			$this->action_url     = $result->issuer->get_authentication_url();
-			$this->transaction_id = $result->transaction->get_id();
+			$this->set_action_url( $result->issuer->get_authentication_url() );
+			$this->set_transaction_id( $result->transaction->get_id() );
 		}
 	}
 	
@@ -123,7 +123,7 @@ class Pronamic_Gateways_IDealAdvancedV3_Gateway extends Pronamic_Gateways_Gatewa
 		$error = $this->client->get_error();
 
 		if ( is_wp_error( $error ) ) {
-			$this->error = $error;
+			$this->set_error( $error );
 		} else {
 			$transaction = $result->transaction;
 

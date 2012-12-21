@@ -58,20 +58,29 @@ abstract class Pronamic_Gateways_Gateway {
 	/////////////////////////////////////////////////
 
 	/**
+	 * The transaction ID
+	 * 
+	 * @var string
+	 */
+	private $transaction_id;
+
+	/////////////////////////////////////////////////
+
+	/**
+	 * Action URL
+	 * 
+	 * @var string
+	 */
+	private $action_url;
+
+	/////////////////////////////////////////////////
+
+	/**
 	 * Error
 	 * 
 	 * @var WP_Error
 	 */
 	public $error;
-
-	/////////////////////////////////////////////////
-
-	/**
-	 * The transaction ID
-	 * 
-	 * @var string
-	 */
-	public $transaction_id;
 
 	/////////////////////////////////////////////////
 
@@ -93,6 +102,15 @@ abstract class Pronamic_Gateways_Gateway {
 	 */
 	public function get_error() {
 		return $this->error;
+	}
+
+	/**
+	 * Set error
+	 * 
+	 * @param WP_Error $error
+	 */
+	public function set_error( WP_Error $error = null ) {
+		$this->error = $error;
 	}
 
 	/////////////////////////////////////////////////
@@ -222,12 +240,41 @@ abstract class Pronamic_Gateways_Gateway {
 	/////////////////////////////////////////////////
 	
 	/**
+	 * Get the transaction ID
+	 * 
+	 * @return string
+	 */
+	public function get_transaction_id() {
+		return $this->transaction_id;
+	}
+	
+	/**
+	 * Set the transaction ID
+	 * 
+	 * @return string
+	 */
+	public function set_transaction_id( $transaction_id ) {
+		$this->transaction_id = $transaction_id;
+	}
+	
+	/////////////////////////////////////////////////
+	
+	/**
 	 * Get the action URL
 	 * 
 	 * @return string
 	 */
 	public function get_action_url() {
 		return $this->action_url;
+	}
+	
+	/**
+	 * Set the action URL
+	 * 
+	 * @return string
+	 */
+	public function set_action_url( $action_url ) {
+		$this->action_url = $action_url;
 	}
 	
 	/////////////////////////////////////////////////
