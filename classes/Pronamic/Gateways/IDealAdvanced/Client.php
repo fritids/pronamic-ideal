@@ -10,6 +10,15 @@
  */
 class Pronamic_Gateways_IDealAdvanced_Client {
 	/**
+	 * Indicator for SHA1 RSA authentication
+	 * 
+	 * @var string
+	 */
+	const AUTHENTICATION_SHA1_RSA = 'SHA1_RSA';
+
+	//////////////////////////////////////////////////
+
+	/**
 	 * The acquirer URL
 	 * 
 	 * @var string
@@ -92,7 +101,7 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 	/**
 	 * Holds the error of the last operation
 	 * 
-	 * @var Error
+	 * @var WP_Error
 	 */
 	private $error;
 	
@@ -220,8 +229,10 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		switch ( $document->getName() ) {
 			case Pronamic_Gateways_IDealAdvanced_XML_ErrorResponseMessage::NAME:
 				$message = Pronamic_Gateways_IDealAdvanced_XML_ErrorResponseMessage::parse( $document );
+				
+				$ideal_error = $message->get_error();
 
-				$this->error = new WP_Error( 'ideal_advanced_error', $message->error, $message );
+				$this->error = new WP_Error( 'ideal_advanced_error', $ideal_error->get_message(), $ideal_error );
 
 				return $message;
 			case Pronamic_Gateways_IDealAdvanced_XML_DirectoryResponseMessage::NAME:
@@ -249,7 +260,7 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		$merchant = $message->getMerchant();
 		$merchant->id = $this->merchant_id;
 		$merchant->subId = $this->sub_id;
-		$merchant->authentication = Pronamic_IDeal_IDeal::AUTHENTICATION_SHA1_RSA;
+		$merchant->authentication = self::AUTHENTICATION_SHA1_RSA;
 		$merchant->token = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint( $this->privateCertificate);
 
 		$response = $this->send_message( $this->directory_request_url, $message );
@@ -308,7 +319,7 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		$merchant = $message->getMerchant();
 		$merchant->id             = $this->merchant_id;
 		$merchant->subId          = $this->sub_id;
-		$merchant->authentication = Pronamic_IDeal_IDeal::AUTHENTICATION_SHA1_RSA;
+		$merchant->authentication = self::AUTHENTICATION_SHA1_RSA;
 		$merchant->returnUrl      = site_url( '/' );
 		$merchant->token          = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint( $this->privateCertificate );
 		
@@ -327,7 +338,7 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		$merchant = $message->getMerchant();
 		$merchant->id             = $this->merchant_id;
 		$merchant->subId          = $this->sub_id;
-		$merchant->authentication = Pronamic_IDeal_IDeal::AUTHENTICATION_SHA1_RSA;
+		$merchant->authentication = self::AUTHENTICATION_SHA1_RSA;
 		$merchant->returnUrl      = site_url( '/' );
 		$merchant->token          = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint( $this->privateCertificate );
 

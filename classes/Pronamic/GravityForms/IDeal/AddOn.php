@@ -239,27 +239,25 @@ class Pronamic_GravityForms_IDeal_AddOn {
 	 * Fulfill order
 	 * 
 	 * @param array $entry
-	 * @param string $transaction_id
-	 * @param string $amount
 	 */
     public static function fulfill_order( $entry ) {
-        $formMeta = RGFormsModel::get_form_meta( $entry['form_id'] );
+		$feed = Pronamic_GravityForms_IDeal_FeedsRepository::getFeedByFormId( $entry['form_id'] );
 
-        $feed = Pronamic_GravityForms_IDeal_FeedsRepository::getFeedByFormId( $entry['form_id'] );
+		if ( $feed !== null ) {
+			self::maybe_update_user_role( $entry, $feed );
 
-        if ( $feed !== null ) {
-        	self::maybe_update_user_role( $entry, $feed );
+			$form_meta = RGFormsModel::get_form_meta( $entry['form_id'] );
 
 			if ( $feed->delayAdminNotification ) {
-				GFCommon::send_admin_notification( $formMeta, $entry );
+				GFCommon::send_admin_notification( $form_meta, $entry );
 			}
 
 			if ( $feed->delayUserNotification ) {
-				GFCommon::send_user_notification( $formMeta, $entry );
+				GFCommon::send_user_notification( $form_meta, $entry );
 			}
 
 			if ( $feed->delayPostCreation ) {
-				RGFormsModel::create_post( $formMeta, $entry );
+				RGFormsModel::create_post( $form_meta, $entry );
 			}
         }
 
@@ -480,14 +478,25 @@ class Pronamic_GravityForms_IDeal_AddOn {
     	$url = $gateway->get_action_url();
 
 		if ( is_wp_error( $error ) ) {
-			$confirmation = Pronamic_WordPress_IDeal_IDeal::get_default_error_message();
+			$html = '';
+
+			$html .= '<ul>';
+			$html .= '<li>' . Pronamic_WordPress_IDeal_IDeal::get_default_error_message() . '</li>';
+
+			foreach ( $error->get_error_messages() As $message ) {
+				$html .= '<li>' . $message . '</li>';
+			}
+
+			$html .= '</ul>';
+
+			$confirmation = $html;
 		} else {
 			// Updating lead's payment_status to Processing
 			$lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_PAYMENT_STATUS]   = Pronamic_GravityForms_GravityForms::PAYMENT_STATUS_PROCESSING;
 			$lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_PAYMENT_AMOUNT]   = $data->getAmount();
 			$lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_PAYMENT_DATE]     = gmdate( 'y-m-d H:i:s' );
 			$lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_TRANSACTION_TYPE] = Pronamic_GravityForms_GravityForms::TRANSACTION_TYPE_PAYMENT;
-			$lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_TRANSACTION_ID]   = $gateway->transaction_id;
+			$lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_TRANSACTION_ID]   = $gateway->get_transaction_id();
 		
 			RGFormsModel::update_lead( $lead );
 	
@@ -515,7 +524,7 @@ class Pronamic_GravityForms_IDeal_AddOn {
         $lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_PAYMENT_AMOUNT]   = $data->getAmount();
         $lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_PAYMENT_DATE]     = gmdate( 'y-m-d H:i:s' );
         $lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_TRANSACTION_TYPE] = Pronamic_GravityForms_GravityForms::TRANSACTION_TYPE_PAYMENT;
-        $lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_TRANSACTION_ID]   = $gateway->transaction_id;
+        $lead[Pronamic_GravityForms_GravityForms::LEAD_PROPERTY_TRANSACTION_ID]   = $gateway->get_transaction_id();
 
         RGFormsModel::update_lead( $lead );
 
