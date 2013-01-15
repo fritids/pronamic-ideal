@@ -84,7 +84,7 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 		$this->calculationsParametersIn  = array();
 		$this->calculationsParametersOut = array();
 
-		$this->hashAlgorithm = self::HASH_ALGORITHM_SHA_1;
+		$this->hash_algorithm = self::HASH_ALGORITHM_SHA_1;
 	}
 
 	//////////////////////////////////////////////////
@@ -114,8 +114,8 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * 
 	 * @return string
 	 */
-	public function getHashAlgorithm() {
-		return $this->hashAlgorithm;
+	public function get_hash_algorithm() {
+		return $this->hash_algorithm;
 	}
 
 	/**
@@ -123,8 +123,8 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	 * 
 	 * @param string $hashAlgorithm
 	 */
-	public function setHashAlgorithm($hashAlgorithm) {
-		$this->hashAlgorithm = $hashAlgorithm;
+	public function set_hash_algorithm( $hash_algorithm ) {
+		$this->hash_algorithm = $hash_algorithm;
 	}
 
 	//////////////////////////////////////////////////
@@ -349,7 +349,7 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 	public function setAmount($amount) {
 		$this->amount = $amount;
 
-		$this->setField(Pronamic_Gateways_IDealInternetKassa_Parameters::AMOUNT, Pronamic_IDeal_IDeal::formatPrice($amount));
+		$this->setField(Pronamic_Gateways_IDealInternetKassa_Parameters::AMOUNT, Pronamic_WordPress_Util::amount_to_cents($amount));
 	}
 
 	//////////////////////////////////////////////////
@@ -483,6 +483,8 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 		$this->setField(Pronamic_Gateways_IDealInternetKassa_Parameters::COM, $description);
 	}
 
+	//////////////////////////////////////////////////
+	// URL's
 	//////////////////////////////////////////////////
 
 	/**
@@ -630,7 +632,10 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 
 		// Loop
 		foreach ( $fields as $name => $value ) {
-			if ( !empty( $value ) ) {
+			$value = (string) $value;
+
+			// Use of empty will fail, value can be string '0'
+			if ( strlen( $value ) > 0 ) {
 				$name = strtoupper( $name );
 		
 				$string .= $name . '=' . $value . $passprahse;
@@ -638,7 +643,7 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 		}
 
 		// Hash
-		$result = hash( $this->hashAlgorithm, $string );
+		$result = hash( $this->hash_algorithm, $string );
 
 		// String to uppercase
 		$result = strtoupper( $result );
@@ -682,7 +687,7 @@ class Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa {
 			// general parameters
 			'PSPID'        => $this->getPspId(),
 			'orderID'      => $this->getOrderId(), 
-			'amount'       => Pronamic_IDeal_IDeal::formatPrice( $this->getAmount() ), 
+			'amount'       => Pronamic_WordPress_Util::amount_to_cents( $this->getAmount() ), 
 			'currency'     => $this->getCurrency(),
 			'language'     => $this->getLanguage(),
 		

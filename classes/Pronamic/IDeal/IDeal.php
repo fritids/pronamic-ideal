@@ -79,19 +79,7 @@ class Pronamic_IDeal_IDeal {
 
 	//////////////////////////////////////////////////
 
-	/**
-	 * Format the price according to the documentation in whole cents
-	 * 
-	 * @param float $price
-	 * @return int
-	 */
-	public static function formatPrice($price) {
-		return round($price * 100);
-	}
-
-	//////////////////////////////////////////////////
-
-	public static function htmlHiddenFields($data) {
+	public static function htmlHiddenFields( $data ) {
 		$html = '';
 
 		foreach ( $data as $name => $value ) {

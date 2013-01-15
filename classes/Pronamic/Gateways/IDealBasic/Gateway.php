@@ -9,7 +9,12 @@
  * @version 1.0
  */
 class Pronamic_Gateways_IDealBasic_Gateway extends Pronamic_Gateways_Gateway {
-	public function __construct( $configuration ) {
+	/**
+	 * Construct and intialize an gateway
+	 * 
+	 * @param Pronamic_WordPress_IDeal_Configuration $configuration
+	 */
+	public function __construct( Pronamic_WordPress_IDeal_Configuration $configuration ) {
 		parent::__construct( $configuration );
 
 		$this->set_method( Pronamic_Gateways_Gateway::METHOD_HTML_FORM );
@@ -26,7 +31,12 @@ class Pronamic_Gateways_IDealBasic_Gateway extends Pronamic_Gateways_Gateway {
 	
 	/////////////////////////////////////////////////
 
-	public function start( $data ) {
+	/**
+	 * Start an transaction with the specified data
+	 * 
+	 * @see Pronamic_Gateways_Gateway::start()
+	 */
+	public function start( Pronamic_IDeal_IDealDataProxy $data ) {
 		$this->set_transaction_id( md5( time() . $data->getOrderId() ) );
 		$this->set_action_url( $this->client->getPaymentServerUrl() );
 		
@@ -35,13 +45,19 @@ class Pronamic_Gateways_IDealBasic_Gateway extends Pronamic_Gateways_Gateway {
 		$this->client->setPurchaseId( $data->getOrderId() );
 		$this->client->setDescription( $data->getDescription() );
 		$this->client->setItems( $data->getItems() );
-		$this->client->setCancelUrl( $data->getCancelUrl() );
-		$this->client->setSuccessUrl( $data->getSuccessUrl() );
-		$this->client->setErrorUrl( $data->getErrorUrl() );
+		$this->client->setCancelUrl( add_query_arg( 'gateway', 'ideal_basic', $data->getCancelUrl() ) );
+		$this->client->setSuccessUrl( add_query_arg( 'gateway', 'ideal_basic', $data->getSuccessUrl() ) );
+		$this->client->setErrorUrl( add_query_arg( 'gateway', 'ideal_basic', $data->getErrorUrl() ) );
 	}
 	
 	/////////////////////////////////////////////////
 
+	/**
+	 * Get output HTML
+	 * 
+	 * @see Pronamic_Gateways_Gateway::get_output_html()
+	 * @return string
+	 */
 	public function get_output_html() {
 		return $this->client->getHtmlFields();
 	}

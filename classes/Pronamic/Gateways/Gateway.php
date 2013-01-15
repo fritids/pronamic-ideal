@@ -30,7 +30,16 @@ abstract class Pronamic_Gateways_Gateway {
 	 * 
 	 * @var Pronamic_WordPress_IDeal_Configuration
 	 */
-	private $configuration;
+	protected $configuration;
+
+	/////////////////////////////////////////////////
+
+	/**
+	 * The slug of this gateway
+	 * 
+	 * @var string
+	 */
+	private $slug;
 
 	/////////////////////////////////////////////////
 
@@ -96,12 +105,41 @@ abstract class Pronamic_Gateways_Gateway {
 	/////////////////////////////////////////////////
 
 	/**
+	 * Get the slug of this gateway
+	 * 
+	 * @return string
+	 */
+	public function get_slug() {
+		return $this->slug;
+	}
+
+	/**
+	 * Set the slug of this gateway
+	 * 
+	 * @param unknown_type $slug
+	 */
+	public function set_slug( $slug ) {
+		$this->slug = $slug;
+	}
+
+	/////////////////////////////////////////////////
+
+	/**
 	 * Get the error
 	 * 
 	 * @return WP_Error or null
 	 */
 	public function get_error() {
 		return $this->error;
+	}
+
+	/**
+	 * Has error
+	 * 
+	 * @return boolean
+	 */
+	public function has_error() {
+		return $this->error != null;
 	}
 
 	/**
@@ -195,18 +233,14 @@ abstract class Pronamic_Gateways_Gateway {
 		$transient = 'pronamic_ideal_issuers_' . $this->configuration->getId();
 
 		$result = get_transient( $transient );
+		// $result = false;
 
-		if ( is_wp_error( $result ) ) {
-			$this->error = $result;
-		} elseif ( $result === false ) {
+		if ( is_wp_error( $result ) || $result === false ) {
 			$issuers = $this->get_issuers();
 
 			if ( $issuers ) {
 				// 60 * 60 * 24 = 24 hours = 1 day
 				set_transient( $transient, $issuers, 60 * 60 * 24 );
-			} elseif ( $this->error ) {
-				// 60 * 30 = 30 minutes
-				set_transient( $transient, $this->error, 60 * 30 * 1 );
 			}
 		} elseif ( is_array( $result ) ) {
 			$issuers = $result;
@@ -351,14 +385,12 @@ abstract class Pronamic_Gateways_Gateway {
 							$field['label']
 						);
 
-						if ( is_array( $field['choices'] ) ) {
-							$html .= sprintf(
-								'<select id="%s" name="%s">%s</select>',
-								esc_attr( $field['id'] ),
-								esc_attr( $field['name'] ),
-								Pronamic_IDeal_HTML_Helper::select_options_grouped( $field['choices'] )
-							);
-						}
+						$html .= sprintf(
+							'<select id="%s" name="%s">%s</select>',
+							esc_attr( $field['id'] ),
+							esc_attr( $field['name'] ),
+							Pronamic_IDeal_HTML_Helper::select_options_grouped( $field['choices'] )
+						);
 						
 						break;
 				}

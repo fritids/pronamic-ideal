@@ -185,34 +185,22 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		) );
 
 		// Handle response
-		if ( ! is_wp_error( $response ) ) {
+		if ( is_wp_error( $response ) ) {
+			$this->error = $response;
+		} else {
 			if ( wp_remote_retrieve_response_code( $response ) == 200 ) {
 				$body = wp_remote_retrieve_body( $response );
 
-				// Suppress all XML errors
-				$use_errors = libxml_use_internal_errors( true );
-
-				$document = simplexml_load_string( $body );
-	
-				if ( $document !== false ) {
-					$result = $this->parse_document( $document );
-				} else {
-					$this->error = new WP_Error( 'xml_load_error', __( 'Could not load the XML response meessage from the iDEAL provider.', 'pronamic_ideal' ) );
-
-					foreach ( libxml_get_errors() as $error ) {
-						$this->error->add( 'libxml_error', $error->message, $error );
-					}
-
-					libxml_clear_errors();
-				}
+				$xml = Pronamic_WordPress_Util::simplexml_load_string( $body );
 				
-				// Set back to previous value 
-				libxml_use_internal_errors( $use_errors );
+				if ( is_wp_error( $xml ) ) {
+					$this->error = $xml;
+				} else {
+					$result = self::parse_document( $xml );
+				}
 			} else {
 				$this->error = new WP_Error( 'wrong_response_code', __( 'The response code (<code>%s<code>) from the iDEAL provider was incorrect.', 'pronamic_ideal' ) );
 			}
-		} else {
-			$this->error = $response;
 		}
 
 		return $result;
@@ -257,11 +245,12 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		$directory = null;
 
 		$message = new Pronamic_Gateways_IDealAdvanced_XML_DirectoryRequestMessage();
+
 		$merchant = $message->getMerchant();
-		$merchant->id = $this->merchant_id;
-		$merchant->subId = $this->sub_id;
+		$merchant->id             = $this->merchant_id;
+		$merchant->subId          = $this->sub_id;
 		$merchant->authentication = self::AUTHENTICATION_SHA1_RSA;
-		$merchant->token = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint( $this->privateCertificate);
+		$merchant->token          = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint( $this->privateCertificate);
 
 		$response = $this->send_message( $this->directory_request_url, $message );
 
@@ -320,7 +309,7 @@ class Pronamic_Gateways_IDealAdvanced_Client {
 		$merchant->id             = $this->merchant_id;
 		$merchant->subId          = $this->sub_id;
 		$merchant->authentication = self::AUTHENTICATION_SHA1_RSA;
-		$merchant->returnUrl      = site_url( '/' );
+		$merchant->returnUrl      = add_query_arg( 'gateway', 'ideal_advanced', site_url( '/' ) );
 		$merchant->token          = Pronamic_Gateways_IDealAdvanced_Security::getShaFingerprint( $this->privateCertificate );
 		
 		$message->issuer      = $issuer;

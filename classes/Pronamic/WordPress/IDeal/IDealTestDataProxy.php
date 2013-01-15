@@ -31,7 +31,7 @@ class Pronamic_WordPress_IDeal_IDealTestDataProxy extends Pronamic_WordPress_IDe
 	public function __construct( WP_User $user, $amount ) {
 		parent::__construct();
 
-		$this->user  = $user;
+		$this->user   = $user;
 		$this->amount = $amount;
 	}
 
@@ -136,18 +136,18 @@ class Pronamic_WordPress_IDeal_IDealTestDataProxy extends Pronamic_WordPress_IDe
 	//////////////////////////////////////////////////
 
 	public function getNormalReturnUrl() {
-		return admin_url();
+		return site_url( '/' );
 	}
 
 	public function getCancelUrl() {
-		return admin_url();
+		return site_url( '/' );
 	}
 
 	public function getSuccessUrl() {
-		return admin_url();
+		return site_url( '/' );
 	}
 
 	public function getErrorUrl() {
-		return admin_url();
+		return site_url( '/' );
 	}
 }

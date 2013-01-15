@@ -36,10 +36,29 @@ $configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigura
 				</tr>
 				<tr>
 					<th scope="row">
-						<?php _e( 'Name', 'pronamic_ideal' ); ?>
+						<?php _e( 'Mode', 'pronamic_ideal' ); ?>
 					</th>
 					<td>
 						<?php echo $configuration->getName(); ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php _e( 'Mode', 'pronamic_ideal' ); ?>
+					</th>
+					<td>
+						<?php 
+						
+						switch ( $configuration->mode ) {
+							case Pronamic_IDeal_IDeal::MODE_LIVE:
+								_e( 'Live', 'pronamic_ideal' );
+								break;
+							case Pronamic_IDeal_IDeal::MODE_TEST:
+								_e( 'Test', 'pronamic_ideal' );
+								break;
+						}
+						
+						?>
 					</td>
 				</tr>
 			</table>
@@ -68,6 +87,9 @@ $configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigura
 					break;
 				case 'advanced_v3':
 					include 'test-method-advanced-v3.php';
+					break;
+				case 'mollie':
+					include 'test-method-mollie.php';
 					break;
 				case 'targetpay':
 					include 'test-method-targetpay.php';

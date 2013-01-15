@@ -30,7 +30,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @var string
 	 */
-	const VERSION = '1.1';
+	const VERSION = '1.2';
 
 	//////////////////////////////////////////////////
 
@@ -113,14 +113,19 @@ class Pronamic_WordPress_IDeal_Plugin {
 		add_action( 'init', array( __CLASS__, 'init' ) );
 		
 		// On template redirect handle an possible return from iDEAL
-		add_action( 'template_redirect', array( __CLASS__, 'handle_ideal_advanced_return' ) );
-		add_action( 'template_redirect', array( __CLASS__, 'handle_ideal_internetkassa_return' ) );
-		add_action( 'template_redirect', array( __CLASS__, 'handle_omnikassa_return' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'handle_returns' ) );
 		
+		add_action( 'pronamic_ideal_advanced_return_raw',      array( 'Pronamic_Gateways_IDealAdvanced_ReturnHandler', 'returns' ), 10, 2 );
+		add_action( 'pronamic_ideal_advanced_v3_return_raw',   array( 'Pronamic_Gateways_IDealAdvancedV3_ReturnHandler', 'returns' ), 10, 2 );
+		add_action( 'pronamic_ideal_internetkassa_return_raw', array( 'Pronamic_Gateways_IDealInternetKassa_ReturnHandler', 'returns' ), 10, 2 );
+		add_action( 'pronamic_ideal_mollie_return_raw',        array( 'Pronamic_Gateways_Mollie_ReturnHandler', 'returns' ) );
+		add_action( 'pronamic_ideal_omnikassa_return_raw',     array( 'Pronamic_Gateways_OmniKassa_ReturnHandler', 'returns' ), 10, 2 );
+
 		// Check the payment status on an iDEAL return
-		add_action( 'pronamic_ideal_advanced_return',      array( __CLASS__, 'checkPaymentStatus' ),               10, 2 );
-		add_action( 'pronamic_ideal_internetkassa_return', array( __CLASS__, 'updateInternetKassaPaymentStatus' ), 10, 2 );
-		add_action( 'pronamic_ideal_omnikassa_return',     array( __CLASS__, 'update_omnikassa_payment_status' ),  10, 2 );
+		add_action( 'pronamic_ideal_advanced_return',       array( __CLASS__, 'checkPaymentStatus' ),                  10, 2 );
+		add_action( 'pronamic_ideal_internetkassa_return',  array( __CLASS__, 'update_internetkassa_payment_status' ), 10, 2 );
+		add_action( 'pronamic_ideal_omnikassa_return',      array( __CLASS__, 'update_omnikassa_payment_status' ),     10, 2 );
+		add_action( 'pronamic_ideal_mollie_return_payment', array( __CLASS__, 'update_mollie_payment_status' ),        10, 2 );
 
 		// The 'pronamic_ideal_check_transaction_status' hook is scheduled the status requests
 		add_action( 'pronamic_ideal_check_transaction_status', array( __CLASS__, 'checkStatus' ) );
@@ -196,58 +201,14 @@ class Pronamic_WordPress_IDeal_Plugin {
 	//////////////////////////////////////////////////
 
 	/**
-	 * Handle iDEAL advanced return
+	 * Handle returns
 	 */
-	public static function handle_ideal_advanced_return() {
-		if ( isset( $_GET['trxid'], $_GET['ec'] ) ) {
-			$transaction_id = filter_input( INPUT_GET, 'trxid', FILTER_SANITIZE_STRING );
-			$entrance_code  = filter_input( INPUT_GET, 'ec', FILTER_SANITIZE_STRING );
-	
-			if ( ! empty( $transaction_id ) && ! empty( $entrance_code ) ) {
-				$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc( $transaction_id, $entrance_code );
-
-				if ( $payment != null ) {
-					$can_redirect = true;
-
-					do_action( 'pronamic_ideal_advanced_return', $payment, $can_redirect );
-				}
-			}
-		}
-	}
-
-	/**
-	 * Handle iDEAL kassa return
-	 */
-	public static function handle_ideal_internetkassa_return() {
-		if ( isset( $_GET['SHASIGN'] ) ) {
-			$configurations = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurations();
-
-			foreach ( $configurations as $configuration ) {
-				$variant = $configuration->getVariant();
-				
-				if ( $variant != null && $variant->getMethod() == 'internetkassa' ) {
-					$iDeal = new Pronamic_Gateways_IDealInternetKassa_IDealInternetKassa();
-
-					$iDeal->setPspId($configuration->pspId);
-					$iDeal->setPassPhraseIn($configuration->shaInPassPhrase);
-					$iDeal->setPassPhraseOut($configuration->shaOutPassPhrase);
-
-					$file = self::$dirname . '/other/calculations-parameters-sha-in.txt';
-					$iDeal->setCalculationsParametersIn( file($file, FILE_IGNORE_NEW_LINES) );
-
-					$file = self::$dirname . '/other/calculations-parameters-sha-out.txt';
-					$iDeal->setCalculationsParametersOut( file($file, FILE_IGNORE_NEW_LINES) );
-
-					$result = $iDeal->verifyRequest($_GET);
-
-					if ( $result !== false ) {
-						do_action( 'pronamic_ideal_internetkassa_return', $result, $can_redirect = true );
-						
-						break;
-					}
-				}
-			}
-		}
+	public static function handle_returns() {
+		Pronamic_Gateways_IDealAdvanced_ReturnHandler::listen();
+		Pronamic_Gateways_IDealAdvancedV3_ReturnHandler::listen();
+		Pronamic_Gateways_IDealInternetKassa_ReturnHandler::listen();
+		Pronamic_Gateways_Mollie_ReturnHandler::listen();
+		Pronamic_Gateways_OmniKassa_ReturnHandler::listen();
 	}
 
 	/**
@@ -256,8 +217,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * @param array $data
 	 * @param boolean $canRedirect
 	 */
-	public static function updateInternetKassaPaymentStatus( $data, $can_redirect = false ) {
-		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentById($data['ORDERID']);
+	public static function update_internetkassa_payment_status( $data, $can_redirect = false ) {
+		$payment = Pronamic_WordPress_IDeal_PaymentsRepository::get_payment_by_purchase_id( array( 'purchase_id' => $data['ORDERID'] ) );
 
 		if ( $payment != null ) {
 			$status = null;
@@ -322,33 +283,6 @@ class Pronamic_WordPress_IDeal_Plugin {
 	}
 
 	/**
-	 * Handle OmniKassa return
-	 */
-	public static function handle_omnikassa_return() {
-		if ( isset( $_POST['Data'], $_POST['Seal'] ) ) {
-			$post_data = filter_input( INPUT_POST, 'Data', FILTER_SANITIZE_STRING );
-			$post_seal = filter_input( INPUT_POST, 'Seal', FILTER_SANITIZE_STRING );
-			
-			if ( ! empty( $post_data ) && ! empty( $post_seal ) ) {
-				$data = Pronamic_Gateways_OmniKassa_OmniKassa::parsePipedString( $post_data );
-	
-				$transaction_reference = $data['transactionReference'];
-
-				$payment = Pronamic_WordPress_IDeal_PaymentsRepository::getPaymentByIdAndEc( $transaction_reference );
-
-				if ( $payment != null ) {
-					$seal = Pronamic_Gateways_OmniKassa_OmniKassa::computeSeal( $post_data, $payment->configuration->getHashKey() );
-	
-					// Check if the posted seal is equal to our seal
-					if ( strcasecmp( $post_seal, $seal ) === 0 ) {
-						do_action( 'pronamic_ideal_omnikassa_return', $data, $can_redirect = true );
-					}
-				}
-			}
-		}
-	}
-
-	/**
 	 * Update OmniKassa payment status
 	 * 
 	 * @param array $result
@@ -379,6 +313,26 @@ class Pronamic_WordPress_IDeal_Plugin {
 
 			do_action( 'pronamic_ideal_status_update', $payment, $can_redirect );
 		}
+	}
+
+	/**
+	 * Update Mollie payment status
+	 * 
+	 * @param array $result
+	 * @param boolean $canRedirect
+	 */
+	public static function update_mollie_payment_status( $payment, $can_redirect = false ) {
+		$transaction_id = $payment->transaction_id;
+
+		$configuration = $payment->configuration;
+
+		$gateway = new Pronamic_Gateways_Mollie_Gateway( $configuration );
+
+		$gateway->update_status( $payment );
+		
+		$updated = Pronamic_WordPress_IDeal_PaymentsRepository::updateStatus( $payment );
+		
+		do_action( 'pronamic_ideal_status_update', $payment, $can_redirect );
 	}
 
 	//////////////////////////////////////////////////

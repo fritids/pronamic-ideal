@@ -123,6 +123,29 @@
 	</provider>
 
 	<provider>
+		<id>dutchpaymentgroup</id>
+		<name>Dutch Payment Group</name>
+		<url>http://www.dutchpaymentgroup.com/</url>
+
+		<variant gateway="dutchpaymentgroup" disabled="disabled">
+			<id>dutchpaymentgroup</id>
+			<name>Dutch Payment Group</name>
+			<url>http://www.dutchpaymentgroup.com/</url>
+
+			<test>
+				<paymentServerUrl>https://www.paydutch.nl/api/processreq.aspx</paymentServerUrl>
+
+				<dashboardUrl>https://www.paydutch.nl/paydutchmanager</dashboardUrl>
+			</test>
+			<live>
+				<paymentServerUrl>https://www.paydutch.nl/api/processreq.aspx</paymentServerUrl>
+
+				<dashboardUrl>https://www.paydutch.nl/paydutchmanager</dashboardUrl>
+			</live>
+		</variant>
+	</provider>
+
+	<provider>
 		<id>fortis-bank</id>
 		<name>Fortis Bank</name>
 			
@@ -389,7 +412,7 @@
 		</variant>
 	</provider>
 
-	<provider>
+	<provider disabled="disabled">
 		<id>multisafepay</id>
 		<name>MultiSafepay</name>
 		<url>http://www.multisafepay.com/</url>
@@ -581,7 +604,7 @@
 		</variant>
 	</provider>
 
-	<provider disabled="disabled">
+	<provider>
 		<id>targetpay</id>
 		<name>TargetPay</name>
 		<url>https://www.targetpay.com/</url>
