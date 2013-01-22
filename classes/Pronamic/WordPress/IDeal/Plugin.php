@@ -10,13 +10,6 @@
  */
 class Pronamic_WordPress_IDeal_Plugin {
 	/**
-	 * The license provider API URL
-	 * 
-	 * @var string
-	 */
-	const LICENSE_PROVIDER_API_URL = 'http://in.pronamic.nl/api/';
-
-	/**
 	 * The maximum number of payments that can be done without an license
 	 * 
 	 * @var int
@@ -30,32 +23,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @var string
 	 */
-	const VERSION = '1.2';
-
-	//////////////////////////////////////////////////
-
-	/**
-	 * Option version
-	 * 
-	 * @var string
-	 */
-	const OPTION_VERSION = 'pronamic_ideal_version';
-	
-	/**
-	 * Option product / license key
-	 * 
-	 * @var string
-	 */
-	const OPTION_KEY = 'pronamic_ideal_key';
-
-	//////////////////////////////////////////////////
-	
-	/**
-	 * Transient key for license information
-	 * 
-	 * @var string
-	 */
-	const TRANSIENT_LICENSE_INFO = 'pronamic_ideal_license_info';
+	const VERSION = '1.2.1';
 
 	//////////////////////////////////////////////////
 
@@ -90,7 +58,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 		load_plugin_textdomain( 'pronamic_ideal', false, $rel_path );
 
 		// Bootstrap the add-ons
-		if ( self::canBeUsed() ) {
+		if ( self::can_be_used() ) {
 			Pronamic_WooCommerce_IDeal_AddOn::bootstrap();
 			Pronamic_GravityForms_IDeal_AddOn::bootstrap();
 			Pronamic_Shopp_IDeal_AddOn::bootstrap();
@@ -342,8 +310,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @return string
 	 */
-	public static function getKey() {
-		return get_option(self::OPTION_KEY);
+	public static function get_key() {
+		return get_option( 'pronamic_ideal_key' );
 	}
 
 	/**
@@ -351,15 +319,13 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @param string $key
 	 */
-	public static function setKey($key) {
-		$currentKey = get_option(self::OPTION_KEY);
+	public static function set_key( $key ) {
+		$current_key = get_option( 'pronamic_ideal_key' );
 
-		if(empty($key)) {
-			delete_option(self::OPTION_KEY);
-			delete_transient(self::TRANSIENT_LICENSE_INFO);
+		if ( empty( $key ) ) {
+			delete_option( 'pronamic_ideal_key' );
 		} elseif($key != $currentKey) {
-			update_option(self::OPTION_KEY, md5(trim($key)));
-			delete_transient(self::TRANSIENT_LICENSE_INFO);
+			update_option( 'pronamic_ideal_key', md5( trim( $key ) ) );
 		}
 	}
 	
@@ -368,35 +334,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @return stdClass an onbject with license information or null
 	 */
-	public static function getLicenseInfo() {
-		$licenseInfo = null;
-
-		$transient = get_transient(self::TRANSIENT_LICENSE_INFO);
-		if($transient === false) {
-			$url = self::LICENSE_PROVIDER_API_URL . 'licenses/show';
-
-			$response = wp_remote_post($url, array(
-				'body' => array(
-					'key' => self::getKey() , 
-					'url' => site_url() 
-				)
-			));
-
-			if(is_wp_error($response)) {
-				$licenseInfo = new stdClass();
-				// Benefit of the doubt
-				$licenseInfo->isValid = true;
-			} else {
-				$licenseInfo = json_decode($response['body']);
-			}
-
-			// Check every day for new license information, an license kan expire every day (60 * 60 * 24)
-			set_transient(self::TRANSIENT_LICENSE_INFO, $licenseInfo, 86400);
-		} else {
-			$licenseInfo = $transient;
-		}
-		
-		return $licenseInfo;
+	public static function get_license_info() {
+		return null;
 	}
 
 	/**
@@ -404,13 +343,13 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @return boolean
 	 */
-	public static function hasValidKey() {
-		$result = false;
+	public static function has_valid_key() {
+		$result = strlen( self::get_key() ) == 32;
 
-		$licenseInfo = self::getLicenseInfo();
+		$license_info = self::get_license_info();
 		
-		if($licenseInfo != null && isset($licenseInfo->isValid)) {
-			$result = $licenseInfo->isValid;
+		if ( $license_info != null && isset( $license_info->isValid ) ) {
+			$result = $license_info->isValid;
 		}
 
 		return $result;
@@ -419,8 +358,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 	/**
 	 * Checks if the plugin is installed
 	 */
-	public static function isInstalled() {
-		return get_option(self::OPTION_VERSION, false) !== false;
+	public static function is_installed() {
+		return get_option( 'pronamic_ideal_version', false ) !== false;
 	}
 
 	/**
@@ -428,8 +367,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @return boolean true if plugin can be used, false otherwise
 	 */
-	public static function canBeUsed() {
-		return self::isInstalled() && (self::hasValidKey() || Pronamic_WordPress_IDeal_PaymentsRepository::get_number_payments() <= self::PAYMENTS_MAX_LICENSE_FREE);
+	public static function can_be_used() {
+		return self::is_installed() && (self::has_valid_key() || Pronamic_WordPress_IDeal_PaymentsRepository::get_number_payments() <= self::PAYMENTS_MAX_LICENSE_FREE);
 	}
 
 	//////////////////////////////////////////////////
@@ -438,7 +377,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * Maybe show an license message
 	 */
 	public static function admin_notices() {
-		if ( ! self::canBeUsed() ): ?>
+		if ( ! self::can_be_used() ): ?>
 		
 			<div class="error">
 				<p>
@@ -454,7 +393,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 				</p>
 			</div>
 
-		<?php elseif ( ! self::hasValidKey() ) : ?>
+		<?php elseif ( ! self::has_valid_key() ) : ?>
 		
 			<div class="updated">
 				<p>
@@ -509,7 +448,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * Setup, creates or updates database tables. Will only run when version changes
 	 */
 	public static function setup() {
-		if ( get_option( self::OPTION_VERSION ) != self::VERSION ) {
+		if ( get_option( 'pronamic_ideal_version' ) != self::VERSION ) {
 			// Update tables
 			Pronamic_WordPress_IDeal_ConfigurationsRepository::update_table();
 			Pronamic_WordPress_IDeal_PaymentsRepository::update_table();
@@ -542,7 +481,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 			self::set_roles( $roles );
 
 			// Update version
-			update_option( self::OPTION_VERSION, self::VERSION );
+			update_option( 'pronamic_ideal_version', self::VERSION );
 		}
 	}
 }
