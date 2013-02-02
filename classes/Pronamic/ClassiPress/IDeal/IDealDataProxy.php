@@ -125,20 +125,112 @@ class Pronamic_ClassiPress_IDeal_IDealDataProxy extends Pronamic_WordPress_IDeal
 	//////////////////////////////////////////////////
 	// URL's
 	//////////////////////////////////////////////////
+
+	/**
+	 * Get notify URL
+	 * 
+	 * @return string
+	 */
+	private function get_notify_url() {
+		// @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/theme-functions.php?at=3.2.1#cl-2380
+		if ( isset( $this->order_values['notify_url'] ) ) {
+			$url = $this->order_values['notify_url'];
+		} else {
+			/*
+			 * We query the order info sometimes directly from the database,
+			 * if we do this the 'notify_url' isn't directly available
+			 */
+			if ( Pronamic_ClassiPress_Order::is_advertisement( $this->order_values ) ) {
+				// Advertisement
+				// @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/theme-functions.php?at=3.2.1#cl-2380
+				$url = add_query_arg(
+					array(
+						'invoice' => $order_vals['txn_id'],
+						'aid'     => $order_vals['ad_id']
+					),
+					site_url( '/' )
+				);
+			} else {
+				// Advertisement package
+				// @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/theme-functions.php?at=3.2.1#cl-2408
+				$url = add_query_arg(
+					array(
+						'invoice' => $order_vals['txn_id'],
+						'uid'     => $order_vals['user_id']
+					),
+					site_url( '/' )
+				);
+			}
+		}
+		
+		return $url;
+	}
+
+	/**
+	 * Get notify URL
+	 * 
+	 * @return string
+	 */
+	private function get_return_url() {
+		// @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/theme-functions.php?at=3.2.1#cl-2381
+		if ( isset( $this->order_values['return_url'] ) ) {
+			$url = $this->order_values['return_url'];
+		} else {
+			/*
+			 * We query the order info sometimes directly from the database,
+			 * if we do this the 'return_url' isn't directly available
+			 * 
+			 * ClassiPress has order information about adding an advertisement,
+			 * but also has order information about advertisement packages.
+			 *
+			 * If the advertisement post ID is empty we know the order
+			 * information is about an advertisement package.
+			 *
+			 * ClassiPress is doing in similar check in the following file:
+			 * @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/gateways/gateway.php?at=3.2.1#cl-31
+			 */
+			if ( Pronamic_ClassiPress_Order::is_advertisement( $this->order_values ) ) {
+				// Advertisement
+				// @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/theme-functions.php?at=3.2.1#cl-2381
+				$url = add_query_arg(
+					array(
+						'pid' => $this->order_values['txn_id'],
+						'aid' => $this->order_values['ad_id']
+					),
+					CP_ADD_NEW_CONFIRM_URL
+				);
+			} else {
+				// Advertisement package
+				// @see https://bitbucket.org/Pronamic/classipress/src/bc1334736c6e/includes/theme-functions.php?at=3.2.1#cl-2409
+				$url = add_query_arg(
+					array(
+						'oid' => $this->order_values['txn_id'],
+						// In some ClassiPress installation the 'wp_cp_order_info' table doesn't have an 'user_id' column
+						'uid' => isset( $this->order_values['user_id'] ) ? $this->order_values['user_id'] : false
+					),
+					CP_MEMBERSHIP_PURCHASE_CONFIRM_URL
+				);
+			}
+		}
+		
+		return $url;
+	}
+
+	//////////////////////////////////////////////////
 	
 	public function getNormalReturnUrl() {
-		return $this->order_values['notify_url'];
+		return $this->get_return_url();
 	}
 	
 	public function getCancelUrl() {
-		return $this->order_values['notify_url'];
+		return $this->get_return_url();
 	}
 	
 	public function getSuccessUrl() {
-		return $this->order_values['notify_url'];
+		return $this->get_return_url();
 	}
 
 	public function getErrorUrl() {
-		return $this->order_values['notify_url'];
+		return $this->get_return_url();
 	}
 }

@@ -22,13 +22,35 @@ class Pronamic_ClassiPress_IDeal_AddOn {
 	 * Bootstrap
 	 */
 	public static function bootstrap() {
-		add_action( 'cp_action_gateway_values',     array( __CLASS__, 'gateway_values' ) );
-		add_action( 'cp_action_payment_method',     array( __CLASS__, 'payment_method' ) );
-		add_action( 'cp_action_gateway',            array( __CLASS__, 'gateway_process' ) );
-
-		add_action( 'pronamic_ideal_status_update', array( __CLASS__, 'update_status' ), 10, 2 );
+		add_action( 'appthemes_init',           array( __CLASS__, 'appthemes_init' ) );
 		
-		add_filter( 'pronamic_ideal_source_column_classipress', array( __CLASS__, 'source_column' ), 10, 2 );
+		/*
+		 * We have to add this action on bootstrap, because we can't
+		 * deterime earlier we are dealing with ClassiPress
+		 */
+		if ( is_admin() ) {
+			add_action( 'cp_action_gateway_values', array( __CLASS__, 'gateway_values' ) );
+		}
+	}
+
+	//////////////////////////////////////////////////
+
+	/**
+	 * Initialize
+	 */
+	public static function appthemes_init() {
+		global $app_theme;
+
+		if ( $app_theme == 'ClassiPress' ) {
+			add_action( 'cp_action_payment_method',     array( __CLASS__, 'payment_method' ) );
+			add_action( 'cp_action_gateway',            array( __CLASS__, 'gateway_process' ) );
+
+			add_action( 'template_redirect', array( __CLASS__, 'process_gateway' ) );
+
+			add_action( 'pronamic_ideal_status_update', array( __CLASS__, 'update_status' ), 10, 2 );
+		
+			add_filter( 'pronamic_ideal_source_column_classipress', array( __CLASS__, 'source_column' ), 10, 2 );
+		}
 	}
 
 	//////////////////////////////////////////////////
@@ -86,12 +108,29 @@ class Pronamic_ClassiPress_IDeal_AddOn {
 	}
 
 	//////////////////////////////////////////////////
+
+	/**
+	 * Get the configuration
+	 * 
+	 * @return Pronamic_WordPress_IDeal_Configuration
+	 */
+	private function get_configuration() {
+		global $app_abbr;
+		
+		$configuration_id = get_option( $app_abbr . '_pronamic_ideal_configuration_id' );
+		
+		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $configuration_id );
+		
+		return $configuration;
+	}
+
+	//////////////////////////////////////////////////
 	
 	/**
 	 * Add the option to the payment drop-down list on checkout
 	 */
 	public static function payment_method() {
-	    global $app_abbr, $gateway_name;
+	    global $app_abbr;
 
 	    if ( get_option( $app_abbr . '_pronamic_ideal_enable' ) == 'yes' ) {
 	        echo '<option value="pronamic_ideal">' . __( 'iDEAL', 'pronamic_ideal' ) . '</option>';
@@ -103,37 +142,79 @@ class Pronamic_ClassiPress_IDeal_AddOn {
 	/**
 	 * Process gateway
 	 */
-	public static function gateway_process( $order_values ) {
-		global $gateway_name, $app_abbr, $post_url;
+	public static function process_gateway() {
+		if ( isset( $_POST['classipress_pronamic_ideal'] ) ) {
+			$configuration = self::get_configuration();
 
-		// if gateway wasn't selected then exit
+			$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
+				
+			if ( $gateway ) {
+				$data = new Pronamic_ClassiPress_IDeal_IDealDataProxy( $_POST );
+					
+				Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
+					
+				if ( $gateway->is_http_redirect() ) {
+					$gateway->redirect();
+				}
+			}
+		}
+	}
+
+	//////////////////////////////////////////////////
+
+	/**
+	 * Process gateway
+	 */
+	public static function gateway_process( $order_values ) {
+		// If gateway wasn't selected then immediately return
 		if ( $order_values['cp_payment_method'] != 'pronamic_ideal' ) { 
 			return;
 		}
 
-		// prepare and add transaction entry
-		if ( file_exists( TEMPLATEPATH . '/includes/gateways/process.php' ) ) {
-			require_once TEMPLATEPATH . '/includes/gateways/process.php';
+		// Add transaction entry
+		$transaction_id = Pronamic_ClassiPress_ClassiPress::add_transaction_entry( $order_values );
 
-			$transaction_entry = cp_prepare_transaction_entry( $order_values );
-			if ( $transaction_entry ) {
-        		$transaction_id = cp_add_transaction_entry( $transaction_entry );
-			}
-		}
-
-		// display iDEAL form
-		$data = new Pronamic_ClassiPress_IDeal_IDealDataProxy( $order_values );
-
-		$configuration_id = get_option( $app_abbr . '_pronamic_ideal_configuration_id' );
-
-		$configuration = Pronamic_WordPress_IDeal_ConfigurationsRepository::getConfigurationById( $configuration_id );
+		// Handle gateway
+		$configuration = self::get_configuration();
 
 		$gateway = Pronamic_WordPress_IDeal_IDeal::get_gateway( $configuration );
 
 		if ( $gateway ) {
-			Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
+			$data = new Pronamic_ClassiPress_IDeal_IDealDataProxy( $order_values );
 
-			echo $gateway->get_form_html( $auto_submit = true );
+			if ( $gateway->is_html_form() ) {
+				Pronamic_WordPress_IDeal_IDeal::start( $configuration, $gateway, $data );
+
+				echo $gateway->get_form_html( $auto_submit = true );
+			}
+			
+			if ( $gateway->is_http_redirect() ) {
+				// Hide the checkout page container HTML element
+				echo '<style type="text/css">.thankyou center { display: none; }</style>';
+
+				?>
+				<form class="form_step" method="post" action="">
+					<?php 
+
+					echo Pronamic_IDeal_IDeal::htmlHiddenFields( $order_values );
+
+					echo $gateway->get_input_html();
+					
+					?>
+
+					<p class="btn1">
+						<?php
+
+						printf(
+							'<input class="ideal-button" type="submit" name="classipress_pronamic_ideal" value="%s" />',
+							__( 'Pay with iDEAL', 'pronamic_ideal' )
+						);
+					
+						?>
+					</p>
+				</form>
+				<?php
+			}
 		}
 	}
 
@@ -147,44 +228,47 @@ class Pronamic_ClassiPress_IDeal_AddOn {
 	public static function update_status( Pronamic_WordPress_IDeal_Payment $payment, $can_redirect = false ) {
 		if ( $payment->getSource() == self::SLUG ) {
 			$id = $payment->getSourceId();
-			$transaction = $payment->transaction;
 
 			$order = Pronamic_ClassiPress_ClassiPress::get_order_by_id( $id );
-			$data_proxy = new Pronamic_ClassiPress_IDeal_IDealDataProxy( $order );
 
-			$url = $data_proxy->getNormalReturnUrl();
+			if ( ! Pronamic_ClassiPress_Order::is_completed( $order ) ) {
+				$data  = new Pronamic_ClassiPress_IDeal_IDealDataProxy( $order );
+	
+				$url = $data->getNormalReturnUrl();
+	
+				switch ( $payment->status ) {
+					case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_CANCELLED:
+							
+						break;
+					case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_EXPIRED:
+							
+						break;
+					case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_FAILURE:
+							
+						break;
+					case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_SUCCESS:
+						Pronamic_ClassiPress_ClassiPress::process_ad_order( $id );
 
-			$status = $transaction->getStatus();
+						Pronamic_ClassiPress_ClassiPress::process_membership_order( $order );
 
-			switch($status) {
-				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_CANCELLED:
-						
-					break;
-				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_EXPIRED:
-						
-					break;
-				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_FAILURE:
-						
-					break;
-				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_SUCCESS:
-					Pronamic_ClassiPress_ClassiPress::process_membership_order( $order );
-					Pronamic_ClassiPress_ClassiPress::process_ad_order( $order );
-		            	
-	            	$url = $data_proxy->getSuccessUrl();
-
-					break;
-				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_OPEN:
-						
-					break;
-				default:
-						
-					break;
-			}
-				
-			if ( $can_redirect ) {
-				wp_redirect( $url, 303 );
-
-				exit;
+						Pronamic_ClassiPress_ClassiPress::update_payment_status_by_txn_id( $id, Pronamic_ClassiPress_PaymentStatuses::COMPLETED );
+			            	
+		            	$url = $data->getSuccessUrl();
+	
+						break;
+					case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_OPEN:
+							
+						break;
+					default:
+							
+						break;
+				}
+	
+				if ( $can_redirect ) {
+					wp_redirect( $url, 303 );
+	
+					exit;
+				}
 			}
 		}
 	}
@@ -201,7 +285,8 @@ class Pronamic_ClassiPress_IDeal_AddOn {
 
 		$text .= sprintf(
 			'<a href="%s">%s</a>',
-			get_edit_post_link( $payment->getSourceId() ),
+			// get_edit_post_link( $payment->getSourceId() ),
+			add_query_arg( 'page', 'transactions', admin_url( 'admin.php' ) ),
 			sprintf( __( 'Order #%s', 'pronamic_ideal' ), $payment->getSourceId() ) 
 		);
 
