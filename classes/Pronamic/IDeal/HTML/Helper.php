@@ -15,15 +15,13 @@ class Pronamic_IDeal_HTML_Helper {
 	 * @param array $pieces
 	 */
 	public static function array_to_html_attributes( array $attributes ) {
-		$html = '';
+		$html  = '';
 		$space = '';
 
 		foreach ( $attributes as $key => $value ) {
-			if ( !empty( $value ) ) {
-				$html .= $space . $key . '=' . '"' . esc_attr( $value ) . '"';
+			$html .= $space . $key . '=' . '"' . esc_attr( $value ) . '"';
 
-				$space = ' ';
-			} 
+			$space = ' '; 
 		}
 
 		return $html;
