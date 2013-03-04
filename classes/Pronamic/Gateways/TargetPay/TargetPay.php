@@ -107,21 +107,9 @@ class Pronamic_Gateways_TargetPay_TargetPay {
 	//////////////////////////////////////////////////
 
 	private function remote_get( $url ) {
-		$result = false;
-
-		$response = wp_remote_get( $url );
-
-		if ( ! is_wp_error( $response ) ) {
-			if ( wp_remote_retrieve_response_code( $response ) == 200 ) {
-				$result = wp_remote_retrieve_body( $response );
-			} else {
-				
-			}
-		} else {
-			
-		}
-
-		return $result;
+		return Pronamic_WordPress_Util::remote_get_body( $url, 200, array(
+			'sslverify' => false
+		) );
 	}
 	
 	//////////////////////////////////////////////////
@@ -137,14 +125,17 @@ class Pronamic_Gateways_TargetPay_TargetPay {
 	 * @param string $reporturl
 	 */
 	public function start_transaction( $rtlo, $bank, $description, $amount, $returnurl, $reporturl ) {
-		$url = add_query_arg( array(
-			'rtlo'        => $rtlo,
-			'bank'        => $bank,
-			'description' => $description,
-			'amount'      => $amount,
-			'returnurl'   => $returnurl,
-			'reporturl'   => $reporturl
-		), self::URL_START_TRANSACTION );
+		$url = Pronamic_WordPress_Util::build_url(
+			self::URL_START_TRANSACTION,
+			array(
+				'rtlo'        => $rtlo,
+				'bank'        => $bank,
+				'description' => $description,
+				'amount'      => Pronamic_WordPress_Util::amount_to_cents( $amount ),
+				'returnurl'   => $returnurl,
+				'reporturl'   => $reporturl
+			)
+		);
 
 		$data = self::remote_get( $url );
 		
@@ -181,23 +172,32 @@ class Pronamic_Gateways_TargetPay_TargetPay {
 	 * @param string $test
 	 */
 	public function check_status( $rtlo, $transaction_id, $once, $test ) {
-		$url = add_query_arg( array(
-			'rtlo'  => $rtlo,
-			'trxid' => $rtlo,
-			'once'  => $once ? '1' : '0',
-			'test'  => $test ? '1' : '0'
-		), self::URL_CHECK_TRANSACTION );
+		$result = null;
 
-		$ata = self::remote_get( $url );
+		$url = Pronamic_WordPress_Util::build_url(
+			self::URL_CHECK_TRANSACTION,
+			array(
+				'rtlo'  => $rtlo,
+				'trxid' => $transaction_id,
+				'once'  => $once ? '1' : '0',
+				'test'  => $test ? '1' : '0'
+			)
+		);
+
+		$data = self::remote_get( $url );
 
 		if ( $data !== false ) {
 			$postion_space = strpos( $data, ' ' );
-	
+
 			if ( $position_space !== false ) {
-				$status      = substr( $data, 0, $postion_space );
-				$description = substr( $data, $postion_space + 1 );
+				$result = new stdClass();
+
+				$result->status      = substr( $data, 0, $postion_space );
+				$result->description = substr( $data, $postion_space + 1 );
 			}
 		}
+		
+		return $result;
 	}
 	
 	//////////////////////////////////////////////////
