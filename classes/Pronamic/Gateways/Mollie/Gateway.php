@@ -67,7 +67,7 @@ class Pronamic_Gateways_Mollie_Gateway extends Pronamic_Gateways_Gateway {
 			'label'    => __( 'Choose your bank', 'pronamic_ideal' ),
 			'required' => true,
 			'type'     => 'select',
-			'choices'  => $this->get_issuers()
+			'choices'  => $this->get_transient_issuers()
 		);
 	}
 	
@@ -112,7 +112,7 @@ class Pronamic_Gateways_Mollie_Gateway extends Pronamic_Gateways_Gateway {
 			switch ( $result->status ) {
 				case Pronamic_Gateways_Mollie_Statuses::SUCCESS:
 					$payment->consumer_name           = $consumer->name;
-					$payment->consumer_account_number = $consumer->account_number;
+					$payment->consumer_account_number = $consumer->account;
 					$payment->consumer_city           = $consumer->city;
 				case Pronamic_Gateways_Mollie_Statuses::CANCELLED:
 				case Pronamic_Gateways_Mollie_Statuses::EXPIRED:

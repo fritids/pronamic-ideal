@@ -4,7 +4,7 @@ Tags: ideal, bank, payment, gravity forms, gravity, forms, form, payment, woocom
 Donate link: http://pronamic.eu/donate/?for=wp-plugin-pronamic-ideal&source=wp-plugin-readme-txt
 Requires at least: 3.0
 Tested up to: 3.5.1
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 
 The Pronamic iDEAL plugin allows you to easily add the iDEAL payment method to 
 your WordPress website.
@@ -53,6 +53,16 @@ The Pronamic iDEAL plugin contains the iDEAL payment gateway for the
 The Pronamic iDEAL plugin contains the iDEAL payment gateway for the 
 [Event Espresso plugin](http://eventespresso.com/).
 
+= s2Member® =
+
+The Pronamic iDEAL plugin contains the iDEAL payment gateway for the 
+[s2Member® plugin](http://www.s2member.com/).
+
+= Membership from WPMUDEV.org =
+
+The Pronamic iDEAL plugin contains the iDEAL payment gateway for the 
+[Membership plugin](http://premium.wpmudev.org/project/membership/).
+
 = Banks and variants =
 
 *	ABN AMRO
@@ -61,6 +71,9 @@ The Pronamic iDEAL plugin contains the iDEAL payment gateway for the
 	*	iDEAL Internetkassa
 	*	iDEAL Hosted
 	*	iDEAL Zelfbouw (zonder kassa)
+	*	iDEAL Zelfbouw (zonder kassa) - v3
+*	Deutsche Bank
+	*	iDEAL Expert - v3 
 *	Fortis Bank
 	*	iDEAL Hosted
 	*	iDEAL Internet Kassa (NEOS Solutions)
@@ -68,16 +81,22 @@ The Pronamic iDEAL plugin contains the iDEAL payment gateway for the
 *	Friesland Bank
 	*	iDEAL Zakelijk
 	*	iDEAL Zakelijk Plus
+	*	iDEAL Zakelijk Plus - v3
 *	iDEAL Simulator
 	*	iDEAL Lite / Basic
 	*	iDEAL Professional / Advanced / Zelfbouw
+	*	iDEAL Professional / Advanced / Zelfbouw - v3
 *	ING
 	*	iDEAL Basic
 	*	iDEAL Internet Kassa (The Way You Pay (TWYP))
 	*	iDEAL Advanced
+	*	iDEAL Advanced - v3
 *	Mollie
+	*	iDEAL
 	*	iDEAL Basic
 	*	iDEAL Advanced
+*	NEOS
+	*	NEOS
 *	Ogone
 	*	Ogone
 *	Rabobank
@@ -85,6 +104,7 @@ The Pronamic iDEAL plugin contains the iDEAL payment gateway for the
 	*	iDEAL Internetkassa
 	*	OmniKassa
 	*	iDEAL  Professional
+	*	iDEAL  Professional - v3
 *	Sisow
 	*	iDEAL Basic
 	*	iDEAL Advanced
@@ -125,6 +145,12 @@ Here is a list of known plugin conflicts:
 
 
 == Changelog ==
+
+= 1.2.6 =
+*	s2Member - Added support for the s2Member plugin
+*	Membership from WPMUDEV.org - Added support for the Membership from WPMUDEV.org plugin
+*	Mollie - Use transient for issuers/banks list
+*	Jigoshop - Improved order status check, prevent multiple stock reducing with OmniKassa
 
 = 1.2.5 =
 *	iDEAL Advanced - Improved handling of parsing response messages
