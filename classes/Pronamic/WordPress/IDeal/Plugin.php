@@ -23,7 +23,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 	 * 
 	 * @var string
 	 */
-	const VERSION = '1.2.5';
+	const VERSION = '1.2.6';
 
 	//////////////////////////////////////////////////
 
@@ -68,6 +68,8 @@ class Pronamic_WordPress_IDeal_Plugin {
 			Pronamic_EShop_IDeal_AddOn::bootstrap();
 			Pronamic_EventEspresso_IDeal_AddOn::bootstrap();
 			// Pronamic_AppThemes_IDeal_AddOn::bootstrap();
+			Pronamic_S2Member_IDeal_AddOn::bootstrap();
+			Pronamic_Membership_IDeal_AddOn::bootstrap();
 		}
 
 		// Admin
@@ -365,7 +367,7 @@ class Pronamic_WordPress_IDeal_Plugin {
 
 		if ( empty( $key ) ) {
 			delete_option( 'pronamic_ideal_key' );
-		} elseif($key != $currentKey) {
+		} elseif ( $key != $current_key ) {
 			update_option( 'pronamic_ideal_key', md5( trim( $key ) ) );
 		}
 	}
