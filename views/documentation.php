@@ -88,6 +88,24 @@
 						
 			)
 		),
+		'buckaroo' => array(
+			'name'      => 'Buckaroo',
+			'url'       => 'http://www.buckaroo.nl/', 
+			'resources' => array(
+				array(
+					'url'     => 'http://pronamic.nl/wp-content/uploads/2013/04/BPE-3.0-Gateway-HTML.1.02.pdf',
+					'name'    => 'Buckaroo Payment Engine 3.0 - Implementation Manual - HTML gateway',
+					'version' => '1.02',
+					'date'    => new DateTime( '01-03-2012' )
+				),
+				array(
+					'url'     => 'http://pronamic.nl/wp-content/uploads/2013/04/BPE-3.0-Service-iDEAL.2.01.pdf',
+					'name'    => 'Buckaroo Payment Engine 3.0 - iDEAL',
+					'version' => '2.01',
+					'date'    => new DateTime( '14-02-2013' )
+				)
+			)
+		),
 		'cardgate.com' => array(
 			'name'      => 'Card Gate Plus',
 			'url'       => 'http://cardgate.com/', 
@@ -270,6 +288,16 @@
 					'url'  => 'https://www.mollie.nl/support/documentatie/betaaldiensten/ideal/professional/',
 					'name' => 'iDEAL Professional/Advanced' 
 				)
+			)
+		),
+	  'buckaroo.nl' => array(
+			'name'      => 'Buckaroo',
+			'url'       => 'http://buckaroo.nl/',
+			'resources' => array(
+				array(
+					'url'  => 'http://payment.buckaroo.nl/',
+					'name' => 'iDEAL Payment Gateway and Support'
+				) 
 			)
 		),
 		'ogone.nl' => array(

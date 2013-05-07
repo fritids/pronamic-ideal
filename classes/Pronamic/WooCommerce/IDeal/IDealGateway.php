@@ -212,8 +212,8 @@ class Pronamic_WooCommerce_IDeal_IDealGateway extends WC_Payment_Gateway {
 		);
 
 		$note = sprintf(
-			__( 'Check the payment of order #%s in your <a href="%s">iDEAL dashboard</a> and <a href="%s">update the status of the order</a>.', 'pronamic_ideal' ),
-			$order->id,
+			__( 'Check the payment of order %s in your <a href="%s">iDEAL dashboard</a> and <a href="%s">update the status of the order</a>.', 'pronamic_ideal' ),
+			$order->get_order_number(),
 			esc_attr( $configuration->getDashboardUrl() ),
 			esc_attr( $edit_order_link )
 		);
@@ -242,8 +242,8 @@ class Pronamic_WooCommerce_IDeal_IDealGateway extends WC_Payment_Gateway {
 		woocommerce_mail(
 			get_option( 'woocommerce_new_order_email_recipient' ),
 			sprintf(
-				__( 'Check iDEAL payment for order #%s', 'pronamic_ideal' ),
-				$order->id
+				__( 'Check iDEAL payment for order %s', 'pronamic_ideal' ),
+				$order->get_order_number()
 			),
 			$message
 		);

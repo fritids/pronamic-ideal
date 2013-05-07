@@ -34,43 +34,329 @@ if ( empty( $configuration->eMailAddress ) ) {
 	$configuration->eMailAddress = get_bloginfo( 'admin_email' );
 }
 
+// Sections
+$variant_id = $configuration->getVariant() == null ? '' : $configuration->getVariant()->getId();
+
+$options = array();
+
+foreach ( Pronamic_WordPress_IDeal_ConfigurationsRepository::getProviders() as $provider ) {
+	$group = array(
+		'name'    => $provider->getName(),
+		'options' => array()
+	);
+
+	foreach ( $provider->getVariants() as $variant ) {
+		$group['options'][$variant->getId()] = $variant->getName();
+	}
+	
+	$options[] = $group;
+}
+
+$sections = array(
+	array(
+		'title'  => __( 'General', 'pronamic_ideal' ),
+		'fields' => array(
+			/*array(
+				'id'          => 'pronamic_ideal_variant_id',
+				'title'       => __( 'Variant', 'pronamic_ideal' ),
+				'type'        => 'select',
+				'value'       => $variant_id,
+				'options'     => $options
+			),*/
+			array(
+				'name'        => 'mode',
+				'id'          => 'pronamic_ideal_mode',
+				'title'       => __( 'Mode', 'pronamic_ideal' ),
+				'type'        => 'optgroup',
+				'options'     => array(
+					Pronamic_IDeal_IDeal::MODE_LIVE => __( 'Live', 'pronamic_ideal' ),
+					Pronamic_IDeal_IDeal::MODE_TEST => __( 'Test', 'pronamic_ideal' ),
+				),
+			),
+			array(
+				'name'        => 'merchantId',
+				'id'          => 'pronamic_ideal_merchant_id',
+				'title'       => __( 'Merchant ID', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'You receive the merchant ID (also known as: acceptant ID) from your iDEAL provider.', 'pronamic_ideal' ),
+				'methods'     => array( 'basic', 'omnikassa', 'advanced', 'advanced_v3' )
+			),
+			array(
+				'name'        => 'subId',
+				'id'          => 'pronamic_ideal_sub_id',
+				'title'       => __( 'Sub ID', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => sprintf( __( 'You receive the sub ID from your iDEAL provider, the default is: %s.', 'pronamic_ideal' ), 0 ),
+				'methods'     => array( 'basic', 'advanced', 'advanced_v3' )
+			),
+			array(
+				'name'        => 'hashKey',
+				'id'          => 'pronamic_ideal_hash_key',
+				'title'       => __( 'Hash Key', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'You configure the hash key (also known as: key or secret key) in the iDEAL dashboard of your iDEAL provider.', 'pronamic_ideal' ),
+				'methods'     => array( 'basic', 'omnikassa' )
+			)
+		)
+	),
+	array(
+		'title'   => __( 'Basic', 'pronamic_ideal' ),
+		'methods' => array( 'basic' ),
+		'fields'  => array(
+			array(
+				'id'          => 'pronamic_ideal_basic_xml_notification_url',
+				'title'       => __( 'XML Notification URL', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'value'       => add_query_arg( array(
+					'gateway'         => 'ideal_basic',
+					'xml_notifaction' => 'true'
+				), site_url( '/' ) ),
+				'methods'     => array( 'basic' ),
+				'readonly'    => true
+			),
+		)
+	),
+	array(
+		'title'   => __( 'Mollie', 'pronamic_ideal' ),
+		'methods' => array( 'mollie' ),
+		'fields'  => array(
+			array(
+				'name'        => 'molliePartnerId',
+				'id'          => 'pronamic_ideal_mollie_partner_id',
+				'title'       => __( 'Partner ID', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'Mollie.nl accountnummer. Op het gespecificeerde account wordt na succesvolle betaling tegoed bijgeschreven.', 'pronamic_ideal' ),
+			),
+			 array(
+				'name'        => 'mollieProfileKey',
+				'id'          => 'pronamic_ideal_mollie_profile_key',
+				'title'       => __( 'Profile Key', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => sprintf(
+					__( 'Hiermee kunt u een ander websiteprofielen selecteren om uw betaling aan te linken. Gebruik de waarde uit het veld Key uit het profiel overzicht. [<a href="%s" target="_blank">bekijk overzicht van uw profielen</a>].', 'pronamic_ideal' ),
+					'https://www.mollie.nl/beheer/account/profielen/'
+				)
+			)
+		)
+	),
+	array(
+		'title'   => __( 'OmniKassa', 'pronamic_ideal' ),
+		'methods' => array( 'omnikassa' ),
+		'fields'  => array(
+			array(
+				'name'        => 'keyVersion',
+				'id'          => 'pronamic_ideal_key_version',
+				'title'       => __( 'Key Version', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => sprintf( __( 'You can find the key version in the <a href="%s" target="_blank">OmniKassa Download Dashboard</a>.', 'pronamic_ideal' ), 'https://download.omnikassa.rabobank.nl/' ),
+			)
+		)
+	),
+	array(
+		'title'   => __( 'Buckaroo', 'pronamic_ideal' ),
+		'methods' => array( 'buckaroo' ),
+		'fields'  => array(
+			array(
+				'name'        => 'buckarooWebsiteKey',
+				'id'          => 'pronamic_ideal_buckaroo_website_key',
+				'title'       => __( 'Website Key', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => sprintf( __( 'You can find your Buckaroo website keys in the <a href="%s" target="_blank">Buckaroo Payment Plaza</a> under "Profile" » "Website".', 'pronamic_ideal' ), 'https://payment.buckaroo.nl/' )
+			),
+			array(
+				'name'        => 'buckarooSecretKey',
+				'id'          => 'pronamic_ideal_buckaroo_secret_key',
+				'title'       => __( 'Secret Key', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => sprintf( __( 'You can find your Buckaroo secret key in the <a href="%s" target="_blank">Buckaroo Payment Plaza</a> under "Configuration" » "Secret Key for Digital Signature".', 'pronamic_ideal' ), 'https://payment.buckaroo.nl/' )
+			)
+		)
+	),
+	array(
+		'title'   => __( 'TargetPay', 'pronamic_ideal' ),
+		'methods' => array( 'targetpay' ),
+		'fields'  => array(
+			array(
+				'name'        => 'targetPayLayoutCode',
+				'id'          => 'pronamic_ideal_targetpay_layoutcode',
+				'title'       => __( 'Layout Code', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'De layoutcode waarop de betaling geboekt moet worden. Zie subaccounts.', 'pronamic_ideal' ),
+			)
+		)
+	),
+	array(
+		'title'   => __( 'Internetkassa', 'pronamic_ideal' ),
+		'methods' => array( 'easy', 'internetkassa' ),
+		'fields'  => array(
+			array(
+				'name'        => 'pspId',
+				'id'          => 'pronamic_ideal_pspid',
+				'title'       => __( 'PSPID', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => sprintf(
+						__( 'If you use the ABN AMRO - IDEAL Easy variant you can use <code>%s</code>.', 'pronamic_ideal' ),
+						'TESTiDEALEASY'
+				),
+				'methods'     => array( 'easy', 'internetkassa' )
+			),
+			array(
+				'id'          => 'pronamic_ideal_character_encoding',
+				'title'       => __( 'Character encoding', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'value'       => get_bloginfo( 'charset' ),
+				'methods'     => array( 'internetkassa' ),
+				'readonly'    => true
+			),
+			 array(
+				'id'          => 'pronamic_ideal_hash_algorithm',
+				'title'       => __( 'Hash algorithm', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'value'       => 'SHA-1',
+				'methods'     => array( 'internetkassa' ),
+				'readonly'    => true
+			),
+			array(
+				'name'        => 'shaInPassPhrase',
+				'id'          => 'pronamic_ideal_sha_in_pass_phrase',
+				'title'       => __( 'SHA-IN Pass phrase', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'You configure the SHA-IN Pass phrase in the iDEAL dashboard (Configuration &raquo; Technical information &raquo; Data and origin verification) of your iDEAL provider.', 'pronamic_ideal' ),
+				'methods'     => array( 'internetkassa' )
+			),
+			array(
+				'name'        => 'shaOutPassPhrase',
+				'id'          => 'pronamic_ideal_sha_out_pass_phrase',
+				'title'       => __( 'SHA-OUT Pass phrase', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'You configure the SHA-OUT Pass phrase in the iDEAL dashboard (Configuration &raquo; Technical information &raquo; Transaction feedback) of your iDEAL provider.', 'pronamic_ideal' ),
+				'methods'     => array( 'internetkassa' )
+			)
+		)
+	),
+	array(
+		'title'   => __( 'Advanced', 'pronamic_ideal' ),
+		'methods' => array( 'advanced', 'advanced_v3' ),
+		'fields'  => array(
+			array(
+				'name'        => 'privateKeyPassword',
+				'id'          => 'pronamic_ideal_private_key_password',
+				'title'       => __( 'Private Key Password', 'pronamic_ideal' ),
+				'type'        => 'text'
+			),
+			array(
+				'name'        => 'privateKey',
+				'id'          => 'pronamic_ideal_private_key',
+				'title'       => __( 'Private Key', 'pronamic_ideal' ),
+				'type'        => 'file',
+				'callback'    => 'pronamic_ideal_private_key_field'
+			),
+			array(
+				'name'        => 'privateCertificate',
+				'id'          => 'pronamic_ideal_private_certificate',
+				'title'       => __( 'Private Certificate', 'pronamic_ideal' ),
+				'type'        => 'file',
+				'callback'    => 'pronamic_ideal_private_certificate_field'
+			)
+		)
+	),
+	array(
+		'title'   => __( 'Private Key and Certificate', 'pronamic_ideal' ),
+		'methods' => array( 'advanced', 'advanced_v3' ),
+		'fields'  => array(
+			array(
+				'name'        => 'privateKeyPassword',
+				'id'          => 'pronamic_ideal_generate_private_key_password',
+				'title'       => __( 'Private Key Password', 'pronamic_ideal' ),
+				'type'        => 'text'
+			),
+			array(
+				'name'        => 'numberDaysValid',
+				'id'          => 'pronamic_ideal_number_days_valid',
+				'title'       => __( 'Number Days Valid', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'specify the length of time for which the generated certificate will be valid, in days.', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'country',
+				'id'          => 'pronamic_ideal_country',
+				'title'       => __( 'Country', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( '2 letter code [NL]', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'stateOrProvince',
+				'id'          => 'pronamic_ideal_state_or_province',
+				'title'       => __( 'State or Province', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'full name [Friesland]', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'locality',
+				'id'          => 'pronamic_ideal_locality',
+				'title'       => __( 'Locality', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'eg, city', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'organization',
+				'id'          => 'pronamic_ideal_organization',
+				'title'       => __( 'Organization', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'eg, company [Pronamic]', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'organizationUnit',
+				'id'          => 'pronamic_ideal_organization_unit',
+				'title'       => __( 'Organization Unit', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => __( 'eg, section', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'commonName',
+				'id'          => 'pronamic_ideal_common_name',
+				'title'       => __( 'Common Name', 'pronamic_ideal' ),
+				'type'        => 'text',
+				'description' => 
+					__( 'eg, YOUR name', 'pronamic_ideal' ) . '<br />' .
+					__( 'Do you have an iDEAL subscription with Rabobank or ING Bank, please fill in the domainname of your website.', 'pronamic_ideal' ) . '<br />' .
+					__( 'Do you have an iDEAL subscription with ABN AMRO, please fill in "ideal_<strong>company</strong>", where "company" is your company name (as specified in the request for the subscription). The value must not exceed 25 characters.', 'pronamic_ideal' )
+			),
+			array(
+				'name'        => 'eMailAddress',
+				'id'          => 'pronamic_ideal_email_address',
+				'title'       => __( 'Email Address', 'pronamic_ideal' ),
+				'type'        => 'text'
+			),
+		)
+	)
+);
+
 // Request
 if ( ! empty( $_POST ) && check_admin_referer( 'pronamic_ideal_save_configuration', 'pronamic_ideal_nonce' ) ) {
 	$variantId = filter_input( INPUT_POST, 'pronamic_ideal_variant_id', FILTER_SANITIZE_STRING );
 	$variant = Pronamic_WordPress_IDeal_ConfigurationsRepository::getVariantById( $variantId );
 	
 	$configuration->setVariant( $variant );
-	$configuration->setMerchantId( filter_input( INPUT_POST, 'pronamic_ideal_merchant_id', FILTER_SANITIZE_STRING ) );
-	$configuration->setSubId( filter_input( INPUT_POST, 'pronamic_ideal_sub_id', FILTER_SANITIZE_STRING ) );
-	$configuration->mode = filter_input( INPUT_POST, 'pronamic_ideal_mode', FILTER_SANITIZE_STRING );
 
-	// Basic
-	$configuration->hashKey = filter_input( INPUT_POST, 'pronamic_ideal_hash_key', FILTER_SANITIZE_STRING );
+	foreach ( $sections as $section ) {
+		foreach ( $section['fields'] as $field ) {
+			if ( isset( $field['name'], $field['id'] ) ) {
+				$property = $field['name'];
+				$name     = $field['id'];
+				$value    = null;
 
-	// OmniKassa
-	$configuration->keyVersion = filter_input( INPUT_POST, 'pronamic_ideal_key_version', FILTER_SANITIZE_STRING );
-	
-	// Mollie
-	$configuration->molliePartnerId = filter_input( INPUT_POST, 'pronamic_ideal_mollie_partner_id', FILTER_SANITIZE_STRING );
-	$configuration->mollieProfileKey = filter_input( INPUT_POST, 'pronamic_ideal_mollie_profile_key', FILTER_SANITIZE_STRING );
-	
-	// TargetPay
-	$configuration->targetPayLayoutCode = filter_input( INPUT_POST, 'pronamic_ideal_targetpay_layoutcode', FILTER_SANITIZE_STRING );
-	
-	// Kassa
-	$configuration->pspId = filter_input( INPUT_POST, 'pronamic_ideal_pspid', FILTER_SANITIZE_STRING );
-	$configuration->shaInPassPhrase = filter_input( INPUT_POST, 'pronamic_ideal_sha_in_pass_phrase', FILTER_SANITIZE_STRING );
-	$configuration->shaOutPassPhrase = filter_input( INPUT_POST, 'pronamic_ideal_sha_out_pass_phrase', FILTER_SANITIZE_STRING );
-	
-	// Advanced
-	if ( $_FILES['pronamic_ideal_private_key']['error'] == UPLOAD_ERR_OK ) {
-		$configuration->privateKey = file_get_contents( $_FILES['pronamic_ideal_private_key']['tmp_name'] );
-	}
+				if ( $field['type'] == 'file' ) {
+					if ( $_FILES[$name]['error'] == UPLOAD_ERR_OK ) {
+						$value = file_get_contents( $_FILES[$name]['tmp_name'] );
+					}
+				} else {
+					$value = filter_input( INPUT_POST, $name, FILTER_SANITIZE_STRING );
+				}
 
-	$configuration->privateKeyPassword = filter_input( INPUT_POST, 'pronamic_ideal_private_key_password', FILTER_SANITIZE_STRING );
-
-	if ( $_FILES['pronamic_ideal_private_certificate']['error'] == UPLOAD_ERR_OK ) {
-		$configuration->privateCertificate = file_get_contents( $_FILES['pronamic_ideal_private_certificate']['tmp_name'] );
+				$configuration->$property = $value;
+			}
+		}
 	}
 	
 	// Generator
@@ -195,223 +481,12 @@ if ( ! empty( $_POST ) && check_admin_referer( 'pronamic_ideal_save_configuratio
 
 	<?php endif; ?>
 
-	<?php 
-	
-	$sections = array();
-
-	// Global secetion
-	$sections['general'] = array(
-		'title'  => __( 'General', 'pronamic_ideal' )
-	);
-
-	$fields = array();
-
-	$variant_id = $configuration->getVariant() == null ? '' : $configuration->getVariant()->getId();
-
-	$options = array();
-
-	foreach ( Pronamic_WordPress_IDeal_ConfigurationsRepository::getProviders() as $provider ) {
-		$group = array(
-			'name'    => $provider->getName(),
-			'options' => array()
-		);
-
-		foreach ( $provider->getVariants() as $variant ) {
-			$group['options'][$variant->getId()] = $variant->getName();
-		}
-		
-		$options[] = $group;
-	}
-
-	$sections = array(
-		array(
-			'title'  => __( 'General', 'pronamic_ideal' ),
-			'fields' => array(
-				/*array(
-					'id'          => 'pronamic_ideal_variant_id',
-					'title'       => __( 'Variant', 'pronamic_ideal' ),
-					'type'        => 'select',
-					'value'       => $variant_id,
-					'options'     => $options
-				),*/
-				array(
-					'id'          => 'pronamic_ideal_mode',
-					'title'       => __( 'Mode', 'pronamic_ideal' ),
-					'type'        => 'optgroup',
-					'value'       => $configuration->mode,
-					'options'     => array(
-						Pronamic_IDeal_IDeal::MODE_LIVE => __( 'Live', 'pronamic_ideal' ),
-						Pronamic_IDeal_IDeal::MODE_TEST => __( 'Test', 'pronamic_ideal' ),
-					)
-				),
-				array(
-					'id'          => 'pronamic_ideal_merchant_id',
-					'title'       => __( 'Merchant ID', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->getMerchantId(),
-					'description' => __( 'You receive the merchant ID (also known as: acceptant ID) from your iDEAL provider.', 'pronamic_ideal' ),
-					'methods'     => array( 'basic', 'omnikassa', 'advanced', 'advanced_v3' )
-				),
-				array(
-					'id'          => 'pronamic_ideal_sub_id',
-					'title'       => __( 'Sub ID', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->getSubId(),
-					'description' => sprintf( __( 'You receive the sub ID from your iDEAL provider, the default is: %s.', 'pronamic_ideal' ), 0 ),
-					'methods'     => array( 'basic', 'advanced', 'advanced_v3' )
-				),
-				array(
-					'id'          => 'pronamic_ideal_key_version',
-					'title'       => __( 'Key Version', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->keyVersion,
-					'description' => sprintf( __( 'You can find the key version in the <a href="%s" target="_blank">OmniKassa Download Dashboard</a>.', 'pronamic_ideal' ), 'https://download.omnikassa.rabobank.nl/' ),
-					'methods'     => array( 'omnikassa' )
-				),
-				array(
-					'id'          => 'pronamic_ideal_hash_key',
-					'title'       => __( 'Hash Key', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->hashKey,
-					'description' => __( 'You configure the hash key (also known as: key or secret key) in the iDEAL dashboard of your iDEAL provider.', 'pronamic_ideal' ),
-					'methods'     => array( 'basic', 'omnikassa' )
-				)
-			)
-		),
-		array(
-			'title'   => __( 'Basic', 'pronamic_ideal' ),
-			'methods' => array( 'basic' ),
-			'fields'  => array(
-				array(
-						'id'          => 'pronamic_ideal_basic_xml_notification_url',
-						'title'       => __( 'XML Notification URL', 'pronamic_ideal' ),
-						'type'        => 'text',
-						'value'       => add_query_arg( array(
-							'gateway'         => 'ideal_basic',
-							'xml_notifaction' => 'true'
-						), site_url( '/' ) ),
-						'methods'     => array( 'basic' ),
-						'readonly'    => true
-				),
-			)
-		),
-		array(
-			'title'   => __( 'Mollie', 'pronamic_ideal' ),
-			'methods' => array( 'mollie' ),
-			'fields'  => array(
-				array(
-					'id'          => 'pronamic_ideal_mollie_partner_id',
-					'title'       => __( 'Partner ID', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->molliePartnerId,
-					'description' => __( 'Mollie.nl accountnummer. Op het gespecificeerde account wordt na succesvolle betaling tegoed bijgeschreven.', 'pronamic_ideal' ),
-				),
-				 array(
-					'id'          => 'pronamic_ideal_mollie_profile_key',
-					'title'       => __( 'Profile Key', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->mollieProfileKey,
-					'description' => sprintf(
-						__( 'Hiermee kunt u een ander websiteprofielen selecteren om uw betaling aan te linken. Gebruik de waarde uit het veld Key uit het profiel overzicht. [<a href="%s" target="_blank">bekijk overzicht van uw profielen</a>].', 'pronamic_ideal' ),
-						'https://www.mollie.nl/beheer/account/profielen/'
-					)
-				)
-			)
-		),
-		array(
-			'title'   => __( 'TargetPay', 'pronamic_ideal' ),
-			'methods' => array( 'targetpay' ),
-			'fields'  => array(
-				array(
-					'id'          => 'pronamic_ideal_targetpay_layoutcode',
-					'title'       => __( 'Layout Code', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->targetPayLayoutCode,
-					'description' => __( 'De layoutcode waarop de betaling geboekt moet worden. Zie subaccounts.', 'pronamic_ideal' ),
-				)
-			)
-		),
-		array(
-			'title'   => __( 'Internetkassa', 'pronamic_ideal' ),
-			'methods' => array( 'easy', 'internetkassa' ),
-			'fields'  => array(
-				array(
-					'id'          => 'pronamic_ideal_pspid',
-					'title'       => __( 'PSPID', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->pspId,
-					'description' => sprintf(
-							__( 'If you use the ABN AMRO - IDEAL Easy variant you can use <code>%s</code>.', 'pronamic_ideal' ),
-							'TESTiDEALEASY'
-					),
-					'methods'     => array( 'easy', 'internetkassa' )
-				),
-				array(
-					'id'          => 'pronamic_ideal_character_encoding',
-					'title'       => __( 'Character encoding', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => get_bloginfo( 'charset' ),
-					'methods'     => array( 'internetkassa' ),
-					'readonly'    => true
-				),
-				 array(
-					'id'          => 'pronamic_ideal_hash_algorithm',
-					'title'       => __( 'Hash algorithm', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => 'SHA-1',
-					'methods'     => array( 'internetkassa' ),
-					'readonly'    => true
-				),
-				array(
-					'id'          => 'pronamic_ideal_sha_in_pass_phrase',
-					'title'       => __( 'SHA-IN Pass phrase', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->shaInPassPhrase,
-					'description' => __( 'You configure the SHA-IN Pass phrase in the iDEAL dashboard (Configuration &raquo; Technical information &raquo; Data and origin verification) of your iDEAL provider.', 'pronamic_ideal' ),
-					'methods'     => array( 'internetkassa' )
-				),
-				array(
-					'id'          => 'pronamic_ideal_sha_out_pass_phrase',
-					'title'       => __( 'SHA-OUT Pass phrase', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->shaOutPassPhrase,
-					'description' => __( 'You configure the SHA-OUT Pass phrase in the iDEAL dashboard (Configuration &raquo; Technical information &raquo; Transaction feedback) of your iDEAL provider.', 'pronamic_ideal' ),
-					'methods'     => array( 'internetkassa' )
-				)
-			)
-		),
-		array(
-			'title'   => __( 'Advanced', 'pronamic_ideal' ),
-			'methods' => array( 'advanced', 'advanced_v3' ),
-			'fields'  => array(
-				array(
-					'id'          => 'pronamic_ideal_private_key_password',
-					'title'       => __( 'Private Key Password', 'pronamic_ideal' ),
-					'type'        => 'text',
-					'value'       => $configuration->privateKeyPassword
-				),
-				array(
-					'id'          => 'pronamic_ideal_private_key',
-					'title'       => __( 'Private Key', 'pronamic_ideal' ),
-					'type'        => 'file',
-					'value'       => $configuration->privateKey,
-					'callback'    => 'pronamic_ideal_private_key_field'
-				),
-				array(
-					'id'          => 'pronamic_ideal_private_certificate',
-					'title'       => __( 'Private Certificate', 'pronamic_ideal' ),
-					'type'        => 'file',
-					'value'       => $configuration->privateCertificate,
-					'callback'    => 'pronamic_ideal_private_certificate_field'
-				)
-			)
-		)
-	);
+	<?php
 
 	function pronamic_ideal_private_key_field( $field, $configuration ) {
 		printf(
 			'<p><pre class="security-data">%s</pre></p>',
-			$field['value']
+			$configuration->{$field['name']}
 		);
 
 		submit_button(
@@ -423,7 +498,7 @@ if ( ! empty( $_POST ) && check_admin_referer( 'pronamic_ideal_save_configuratio
 	function pronamic_ideal_private_certificate_field( $field, $configuration ) {
 		printf(
 			'<p><pre class="security-data">%s</pre></p>',
-			$field['value']
+			$configuration->{$field['name']}
 		);
 
 		if ( ! empty( $configuration->privateCertificate ) ) {
@@ -548,12 +623,19 @@ if ( ! empty( $_POST ) && check_admin_referer( 'pronamic_ideal_save_configuratio
 								
 								if ( ! empty( $classes ) ) {
 									$attributes['class'] = implode( ' ', $classes );
-								}						
+								}
+
+								$value = '';
+								if ( isset( $field['name'] ) ) {
+									$value = $configuration->{$field['name']};
+								} elseif( isset( $field['value'] ) ) {
+									$value = $field['value'];
+								}
 								
 								switch ( $field['type'] ) {
 									case 'text' :
 										$attributes['type']  = 'text';
-										$attributes['value'] = $field['value'];
+										$attributes['value'] = $value;
 		
 										printf(
 											'<input %s />',
@@ -574,24 +656,24 @@ if ( ! empty( $_POST ) && check_admin_referer( 'pronamic_ideal_save_configuratio
 										printf(
 											'<select %s>%s</select>',
 											Pronamic_IDeal_HTML_Helper::array_to_html_attributes( $attributes ),
-											Pronamic_IDeal_HTML_Helper::select_options_grouped( $field['options'], $field['value'] )
+											Pronamic_IDeal_HTML_Helper::select_options_grouped( $field['options'], $value )
 										);
 		
 										break;
 									case 'optgroup' :
 										printf( '<fieldset>' );
-										printf( '<legend class="screen-reader-text">%s</legend>', __( 'Mode', 'pronamic_ideal' ) );
+										printf( '<legend class="screen-reader-text">%s</legend>', $field['title'] );
 		
 										printf( '<p>' );
 										
-										foreach ( $field['options'] as $value => $label ) {
+										foreach ( $field['options'] as $key => $label ) {
 											printf( 
 												'<label>%s %s</label><br />',
 												sprintf( 
 													'<input type="radio" value="%s" name="%s" %s />',
-													$value,
+													$key,
 													$field['id'],
-													checked( $field['value'], $value, false )
+													checked( $value, $key, false )
 												),
 												$label
 											);
@@ -639,136 +721,6 @@ if ( ! empty( $_POST ) && check_admin_referer( 'pronamic_ideal_save_configuratio
 			<h4>
 				<?php _e( 'Private Key and Certificate Generator', 'pronamic_ideal' ); ?>
 			</h4>
-
-			<table class="form-table">
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_generate_private_key_password">
-							<?php _e( 'Private Key Password', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_generate_private_key_password" name="pronamic_ideal_generate_private_key_password" value="<?php echo $configuration->privateKeyPassword; ?>" type="text" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_days">
-							<?php _e( 'Number Days Valid', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_number_days_valid" name="pronamic_ideal_number_days_valid" value="<?php echo $configuration->numberDaysValid; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( 'specify the length of time for which the generated certificate will be valid, in days. ', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_country_name">
-							<?php _e( 'Country', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_country" name="pronamic_ideal_country" value="<?php echo $configuration->country; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( '2 letter code [NL]', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_state_or_province">
-							<?php _e( 'State or Province', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_state_or_province" name="pronamic_ideal_state_or_province" value="<?php echo $configuration->stateOrProvince; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( 'full name [Friesland]', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_locality">
-							<?php _e( 'Locality', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_locality" name="pronamic_ideal_locality" value="<?php echo $configuration->locality; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( 'eg, city', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_organization">
-							<?php _e( 'Organization', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_organization" name="pronamic_ideal_organization" value="<?php echo $configuration->organization; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( 'eg, company [Pronamic]', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_organization_unit">
-							<?php _e( 'Organization Unit', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_organization_unit" name="pronamic_ideal_organization_unit" value="<?php echo $configuration->organizationUnit; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( 'eg, section', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_common_name">
-							<?php _e( 'Common Name', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_common_name" name="pronamic_ideal_common_name" value="<?php echo $configuration->commonName; ?>" type="text" />
-
-						<span class="description">
-							<br />
-							<?php _e( 'eg, YOUR name', 'pronamic_ideal' ); ?>
-							<?php _e( 'Do you have an iDEAL subscription with Rabobank or ING Bank, please fill in the domainname of your website.', 'pronamic_ideal' ); ?>
-							<?php _e( 'Do you have an iDEAL subscription with ABN AMRO, please fill in "ideal_<strong>company</strong>", where "company" is your company name (as specified in the request for the subscription). The value must not exceed 25 characters.', 'pronamic_ideal' ); ?>
-						</span>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="pronamic_ideal_email_address">
-							<?php _e( 'Email Address', 'pronamic_ideal' ); ?>
-						</label>
-					</th>
-					<td> 
-						<input id="pronamic_ideal_email_address" name="pronamic_ideal_email_address" value="<?php echo $configuration->eMailAddress; ?>" type="text" />
-					</td>
-				</tr>
-			</table>
 
 			<?php
 

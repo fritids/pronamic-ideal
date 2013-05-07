@@ -94,6 +94,48 @@
 			</certificates>
 		</variant>
 	</provider>
+	
+	<provider>
+		<id>adyen</id>
+		<name>Adyen</name>
+		<url>http://www.adyen.com/</url>
+
+		<variant gateway="adyen">
+			<id>adyen</id>
+			<name>Adyen</name>
+			<url>http://www.adyen.com/</url>
+
+			<test>
+				<paymentServerUrl>https://test.adyen.com/hpp/pay.shtml</paymentServerUrl>
+				<dashboardUrl>https://ca-test.adyen.com/</dashboardUrl>
+			</test>
+			<live>
+				<paymentServerUrl>https://live.adyen.com/hpp/pay.shtml</paymentServerUrl>
+				<dashboardUrl>https://ca-live.adyen.com/</dashboardUrl>
+			</live>
+		</variant>
+	</provider>
+
+	<provider>
+		<id>buckaroo</id>
+		<name>Buckaroo</name>
+		<url>http://www.buckaroo.nl/</url>
+
+		<variant gateway="buckaroo">
+			<id>buckaroo</id>
+			<name>Buckaroo - iDEAL</name>
+			<url>https://payment.buckaroo.nl/</url>
+
+			<test>
+				<paymentServerUrl>https://testcheckout.buckaroo.nl/html/</paymentServerUrl>
+				<dashboardUrl>https://payment.buckaroo.nl/</dashboardUrl>
+			</test>
+			<live>
+				<paymentServerUrl>https://checkout.buckaroo.nl/html/</paymentServerUrl>
+				<dashboardUrl>https://payment.buckaroo.nl/</dashboardUrl>
+			</live>
+		</variant>
+	</provider>
 
 	<provider>
 		<id>deutschebank</id>
@@ -618,6 +660,25 @@
 			</test>
 			<live>
 				<dashboardUrl>https://www.targetpay.com/login</dashboardUrl>
+			</live>
+		</variant>
+	</provider>
+
+	<provider>
+		<id>qantani</id>
+		<name>Qantani</name>
+		<url>https://www.qantani.com/</url>
+
+		<variant gateway="qantani">
+			<id>qantani</id>
+			<name>Qantani - iDEAL</name>
+			<url>https://www.qantani.com/</url>
+
+			<test>
+				<dashboardUrl>https://www.qantanipayments.com/backoffice/login/</dashboardUrl>
+			</test>
+			<live>
+				<dashboardUrl>https://www.qantanipayments.com/backoffice/login/</dashboardUrl>
 			</live>
 		</variant>
 	</provider>

@@ -18,7 +18,7 @@ class Pronamic_WordPress_Util {
 	public static function remote_get_body( $url, $required_response_code = 200, array $args = array() ) {
 		$return = false;
 
-		$result = wp_remote_get( $url, $args );
+		$result = wp_remote_request( $url, $args );
 
 		if ( is_wp_error( $result ) ) {
 			$return = $result;
@@ -87,6 +87,31 @@ class Pronamic_WordPress_Util {
 	 */
 	public static function amount_to_cents( $price ) {
 		return round( $price * 100 );
+	}
+
+	//////////////////////////////////////////////////
+
+	/**
+	 * Convert boolean to an numceric boolean
+	 * 
+	 * @see https://github.com/eet-nu/buckaroo-ideal/blob/master/lib/buckaroo-ideal/request.rb#L136
+	 * @param boolean $boolean
+	 * @return int
+	 */
+	public static function to_numeric_boolean( $boolean ) {
+		return $boolean ? 1 : 0;
+	}
+
+	//////////////////////////////////////////////////
+
+	public static function format_date( $format, DateTime $date = null ) {
+		$result = null;
+		
+		if ( $date !== null ) {
+			$result = $date->format( $format );
+		}
+		
+		return $result;
 	}
 
 	//////////////////////////////////////////////////

@@ -1,6 +1,8 @@
 <?php 
 
-$gateway = new Pronamic_Gateways_IDealEasy_Gateway( $configuration );
+global $pronamic_ideal_errors;
+
+$gateway = new Pronamic_Gateways_Buckaroo_Gateway( $configuration );
 
 ?>
 <h3>
@@ -10,12 +12,12 @@ $gateway = new Pronamic_Gateways_IDealEasy_Gateway( $configuration );
 <?php foreach ( array( 2, 3, 4, 5, 1 ) as $test_case ): ?>
 	
 	<?php 
+				
+	$name = sprintf( __( 'Test &euro; %s', 'pronamic_ideal' ), $test_case );
 
 	$data = new Pronamic_WordPress_IDeal_IDealTestDataProxy( wp_get_current_user(), $test_case );
-		
-	$gateway->start( $data );
 
-	$name = sprintf( __( 'Test &euro; %s', 'pronamic_ideal' ), $test_case );
+	$gateway->start( $data );
 
 	?>
 	

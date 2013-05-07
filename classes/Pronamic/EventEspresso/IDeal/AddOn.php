@@ -88,16 +88,8 @@ class Pronamic_EventEspresso_IDeal_AddOn {
 
 				if ( is_wp_error( $error ) ) {
 					Pronamic_WordPress_IDeal_IDeal::render_errors( $error );
-				}
-
-				if ( $gateway->is_http_redirect() ) {
+				} else {
 					$gateway->redirect();
-				}
-				
-				if ( $gateway->is_html_form() ) {
-					echo $gateway->get_form_html( );
-					
-					exit;
 				}
 			}
 		}
@@ -304,6 +296,8 @@ class Pronamic_EventEspresso_IDeal_AddOn {
 					break;
 				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_SUCCESS:
 	            	$payment_data['payment_status'] = Pronamic_EventEspresso_EventEspresso::PAYMENT_STATUS_COMPLETED;
+	            	$payment_data['txn_type']       = __( 'iDEAL', 'pronamic_ideal' );
+	            	$payment_data['txn_id']         = $payment->transaction_id;
 
 					break;
 				case Pronamic_Gateways_IDealAdvanced_Transaction::STATUS_OPEN:
