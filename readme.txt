@@ -1,10 +1,10 @@
 === Pronamic iDEAL ===
-Contributors: pronamic, remcotolsma 
-Tags: ideal, bank, payment, gravity forms, gravity, forms, form, payment, woocommerce, woothemes, shopp, rabobank, friesland bank, ing, mollie, omnikassa, wpsc, wpecommerce, commerce, e-commerce, cart, classipress, appthemes
-Donate link: http://pronamic.eu/donate/?for=wp-plugin-pronamic-ideal&source=wp-plugin-readme-txt
-Requires at least: 3.0
-Tested up to: 3.5.2
-Stable tag: 1.3.1
+**Contributors:** pronamic, remcotolsma   
+**Tags:** ideal, bank, payment, gravity forms, gravity, forms, form, payment, woocommerce, woothemes, shopp, rabobank, friesland bank, ing, mollie, omnikassa, wpsc, wpecommerce, commerce, e-commerce, cart, classipress, appthemes  
+**Donate link:** http://pronamic.eu/donate/?for=wp-plugin-pronamic-ideal&source=wp-plugin-readme-txt  
+**Requires at least:** 3.0  
+**Tested up to:** 3.5.2  
+**Stable tag:** 1.3.2
 
 The Pronamic iDEAL plugin allows you to easily add the iDEAL payment method to 
 your WordPress website.
@@ -155,7 +155,7 @@ Here is a list of known plugin conflicts:
 = 1.2.11 =
 *	Fixed saving of private key and certificate
 
-= 1.2.10 = 
+= 1.2.10 =
 *	Configuration editor - Removed double private key password field
 *	iDEAL Advanced v3 - Improved error handling signing documents
 
@@ -251,7 +251,7 @@ Here is a list of known plugin conflicts:
 = beta-0.11.0 =
 *	Tweak - Improved support for the iDEAL Easy variant, this variant requires an PSP ID
 *	Shopp - Fix - Force auth only for the iDEAL gateway
-*	OmniKassa - Removed the optional parameter 'customerLanguage', was giving "Ongeldige waarde  : customerLanguage=NL" error
+***	OmniKassa - Removed the optional parameter 'customerLanguage', was giving "Ongeldige waarde  :** customerLanguage=NL" error  
 *	OmniKassa - Added documentation "Integration guide Rabo OmniKassa – Version 2.0.1 April 2012"
 *	Gravity Forms - Added custom merge tags for payment status, date, amount and transaction id
 
@@ -261,7 +261,7 @@ Here is a list of known plugin conflicts:
 = beta-0.10 =
 *	Tweak - Added extra check in loading certificates files from the iDEAL XML file
 *	Shopp - Fix - Purchases with discount payments fix
-*	Tweak - Added ABN AMRO Bank : Parameter Cookbook documentation link
+***	Tweak - Added ABN AMRO Bank :** Parameter Cookbook documentation link  
 *	Feature - Added support for the iDEAL Internet Kassa of Ogone
 
 = beta-0.9.9 =
@@ -286,7 +286,7 @@ Here is a list of known plugin conflicts:
 *	OmniKassa - Added the "Zo werkt het aanvragen en aansluiten van de Rabo OmniKassa" PDF file to the documentation page
 *	OmniKassa - Added an easy interface to execute the five iDEAL simulation transactions
 *	Jigoshop - Updated the HTML options table head of the IDEAL gateway to the default Jigoshop format
-*	iDEAL Advanced - Fixed an issue with an empty WordPress WPLANG constant, causing field generating error: language. Parameter '' has less than 2 characters
+***	iDEAL Advanced - Fixed an issue with an empty WordPress WPLANG constant, causing field generating error:** language. Parameter '' has less than 2 characters  
 *	Sisow - Added the "Sisow - Pronamic iDEAL" PDF file to the documentation page
 *	Gravity Forms - Improved the determination of the status URL
 *	Sisow - Added support for "Sisow - iDEAL Basic" variant
@@ -371,7 +371,7 @@ Here is a list of known plugin conflicts:
 
 = beta-0.8.3 =
 *	Fixed notice wp_register_style was called incorrectly in admin
-*	Fixed notice undefined variable: nl2br in the Gravity Forms Add-On
+***	Fixed notice undefined variable:** nl2br in the Gravity Forms Add-On  
 *	Fixed issue in WooCommerce with building the iDEAL basic succes URL, Google Analytics e-commerce tracking was not possible
 *	Fixed issue with the purchase ID passing through to iDEAL
 *	Added extra description to the hash key field on the iDEAL configuration edit page 
@@ -475,9 +475,10 @@ Here is a list of known plugin conflicts:
 *	[Remco Tolsma](http://remcotolsma.nl/)
 *	[Online styleguide van iDEAL](http://huisstijl.idealdesk.com/) 
 *	[iDEAL Professional - SSL Certificaten](http://www.ideal-simulator.nl/ideal-professional-ssl-certificaten.html)
+*	[Node.js wrapper for Ogone DirectLink](https://github.com/mlegenhausen/node-ogone-directlink)
 *	[Markdown's Syntax Documentation][markdown syntax]
 
-[markdown syntax]: http://daringfireball.net/projects/markdown/syntax
+**[markdown syntax]:** http://daringfireball.net/projects/markdown/syntax  
 		"Markdown is what the parser uses to process much of the readme file"
 
 
