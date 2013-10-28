@@ -1,10 +1,10 @@
 === Pronamic iDEAL ===
-**Contributors:** pronamic, remcotolsma   
-**Tags:** ideal, bank, payment, gravity forms, gravity, forms, form, payment, woocommerce, woothemes, shopp, rabobank, friesland bank, ing, mollie, omnikassa, wpsc, wpecommerce, commerce, e-commerce, cart, classipress, appthemes  
-**Donate link:** http://pronamic.eu/donate/?for=wp-plugin-pronamic-ideal&source=wp-plugin-readme-txt  
-**Requires at least:** 3.0  
-**Tested up to:** 3.5.2  
-**Stable tag:** 1.3.4
+Contributors: pronamic, remcotolsma 
+Tags: ideal, bank, payment, gravity forms, gravity, forms, form, payment, woocommerce, woothemes, shopp, rabobank, friesland bank, ing, mollie, omnikassa, wpsc, wpecommerce, commerce, e-commerce, cart, classipress, appthemes
+Donate link: http://pronamic.eu/donate/?for=wp-plugin-pronamic-ideal&source=wp-plugin-readme-txt
+Requires at least: 3.0
+Tested up to: 3.7
+Stable tag: 2.0.0
 
 The Pronamic iDEAL plugin allows you to easily add the iDEAL payment method to 
 your WordPress website.
@@ -115,6 +115,11 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 WordPress installation and then activate the Plugin from Plugins page.
 
 
+== Developers ==
+
+*	php ~/wp/svn/i18n-tools/makepot.php wp-plugin ~/wp/git/pronamic-ideal ~/wp/git/pronamic-ideal/languages/pronamic_ideal.pot
+
+
 == Screenshots ==
 
 1.	Configuration edit page
@@ -146,6 +151,43 @@ Here is a list of known plugin conflicts:
 
 == Changelog ==
 
+= 2.0.0 =
+*	Refactor - Converted configurations to posts (custom post type).
+*	Refactor - Converted payments to posts (custom post type).
+*	Refactor - Converted Gravity Forms pay feeds to posts (custom post type).
+*	Refactor - Rewritten all gateways, configurations, update status functions and more.
+*	Refactor - Settings pages now use the WordPress settings API.
+*	Refactor - s2Member iDEAL gateway rewritten.
+*	Refactor - Membership iDEAL gateway rewritten.
+*	Refactor - WP e-Commerce iDEAL gateway rewritten.
+*	Refactor - WordPress Coding Standards optimizations.
+*	Feature - Added support for the "Deutsche Bank - iDEAL via Ogone" gateway.
+*	Feature - Added support for the "Ogone - DirectLink" gateway.
+*	Feature - Added support for the "Dutch Payment Group - PayDutch" gateway. 
+*	Feature - Extended the iDEAL Advanced v3 private key and certifcate generate commands.
+*	Feature - Added log/note/comment system to payments using WordPress comment system.
+*	Feature - Added an dashboard page - latest payments, Pronamic news and more.
+*	Feature - Added an system status - supported extensions, versions, build status and more.
+*	Feature - Added settings for global return pages.
+*	Tweak - Added support for iDEAL Advanced v3 on PHP 5.2 (thanks to ING).
+*	Tweak - Display ICEPAY return URL's in readonly fields.
+*	Tweak - Adjusted Ogone dashboard URL's to the new dashboard URL's.
+*	Tweak - Added support for Ogone hash algorithms (SHA-1, SHA-256 and SHA-512).
+*	Tweak - Added more unit testing for gateways and XML parsing.
+*	Localization - Added POT file and use makepot.php
+
+= 1.3.4 =
+*	Improved support for cancelled payments in WooCommerce
+
+= 1.3.3 =
+*	Fixed bug Fatal error: Class 'Pronamic_WordPress_IDeal_IDealTestDataProxy' not found 
+*	Added support for the 'Deutsche Bank - iDEAL via Ogone' variant
+*	Added check on required OpenSSL version 0.9.8 with SHA256 support
+*	Improved support for Event Espresso 3.1, added iDEAL logo
+
+= 1.3.2 =
+*	Updated to Icepay API library v2.3.0
+
 = 1.3.1 =
 *	Fixed deprecated notice in Jigoshop Add-On (Assigning the return value of new by reference)
 
@@ -155,7 +197,7 @@ Here is a list of known plugin conflicts:
 = 1.2.11 =
 *	Fixed saving of private key and certificate
 
-= 1.2.10 =
+= 1.2.10 = 
 *	Configuration editor - Removed double private key password field
 *	iDEAL Advanced v3 - Improved error handling signing documents
 
@@ -251,7 +293,7 @@ Here is a list of known plugin conflicts:
 = beta-0.11.0 =
 *	Tweak - Improved support for the iDEAL Easy variant, this variant requires an PSP ID
 *	Shopp - Fix - Force auth only for the iDEAL gateway
-***	OmniKassa - Removed the optional parameter 'customerLanguage', was giving "Ongeldige waarde  :** customerLanguage=NL" error  
+*	OmniKassa - Removed the optional parameter 'customerLanguage', was giving "Ongeldige waarde  : customerLanguage=NL" error
 *	OmniKassa - Added documentation "Integration guide Rabo OmniKassa – Version 2.0.1 April 2012"
 *	Gravity Forms - Added custom merge tags for payment status, date, amount and transaction id
 
@@ -261,7 +303,7 @@ Here is a list of known plugin conflicts:
 = beta-0.10 =
 *	Tweak - Added extra check in loading certificates files from the iDEAL XML file
 *	Shopp - Fix - Purchases with discount payments fix
-***	Tweak - Added ABN AMRO Bank :** Parameter Cookbook documentation link  
+*	Tweak - Added ABN AMRO Bank : Parameter Cookbook documentation link
 *	Feature - Added support for the iDEAL Internet Kassa of Ogone
 
 = beta-0.9.9 =
@@ -286,7 +328,7 @@ Here is a list of known plugin conflicts:
 *	OmniKassa - Added the "Zo werkt het aanvragen en aansluiten van de Rabo OmniKassa" PDF file to the documentation page
 *	OmniKassa - Added an easy interface to execute the five iDEAL simulation transactions
 *	Jigoshop - Updated the HTML options table head of the IDEAL gateway to the default Jigoshop format
-***	iDEAL Advanced - Fixed an issue with an empty WordPress WPLANG constant, causing field generating error:** language. Parameter '' has less than 2 characters  
+*	iDEAL Advanced - Fixed an issue with an empty WordPress WPLANG constant, causing field generating error: language. Parameter '' has less than 2 characters
 *	Sisow - Added the "Sisow - Pronamic iDEAL" PDF file to the documentation page
 *	Gravity Forms - Improved the determination of the status URL
 *	Sisow - Added support for "Sisow - iDEAL Basic" variant
@@ -371,7 +413,7 @@ Here is a list of known plugin conflicts:
 
 = beta-0.8.3 =
 *	Fixed notice wp_register_style was called incorrectly in admin
-***	Fixed notice undefined variable:** nl2br in the Gravity Forms Add-On  
+*	Fixed notice undefined variable: nl2br in the Gravity Forms Add-On
 *	Fixed issue in WooCommerce with building the iDEAL basic succes URL, Google Analytics e-commerce tracking was not possible
 *	Fixed issue with the purchase ID passing through to iDEAL
 *	Added extra description to the hash key field on the iDEAL configuration edit page 
@@ -478,7 +520,7 @@ Here is a list of known plugin conflicts:
 *	[Node.js wrapper for Ogone DirectLink](https://github.com/mlegenhausen/node-ogone-directlink)
 *	[Markdown's Syntax Documentation][markdown syntax]
 
-**[markdown syntax]:** http://daringfireball.net/projects/markdown/syntax  
+[markdown syntax]: http://daringfireball.net/projects/markdown/syntax
 		"Markdown is what the parser uses to process much of the readme file"
 
 
